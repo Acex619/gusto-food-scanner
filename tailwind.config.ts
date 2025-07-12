@@ -52,6 +52,16 @@ export default {
 					DEFAULT: 'hsl(var(--card))',
 					foreground: 'hsl(var(--card-foreground))'
 				},
+				// Risk level colors
+				safe: 'hsl(var(--safe))',
+				caution: 'hsl(var(--caution))',
+				moderate: 'hsl(var(--moderate))',
+				high: 'hsl(var(--high))',
+				// Environmental colors
+				'eco-excellent': 'hsl(var(--eco-excellent))',
+				'eco-good': 'hsl(var(--eco-good))',
+				'eco-moderate': 'hsl(var(--eco-moderate))',
+				'eco-poor': 'hsl(var(--eco-poor))',
 				sidebar: {
 					DEFAULT: 'hsl(var(--sidebar-background))',
 					foreground: 'hsl(var(--sidebar-foreground))',
