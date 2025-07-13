@@ -4,10 +4,10 @@ const config: CapacitorConfig = {
   appId: 'app.lovable.3d9d9ebd56864720ac4285677832f2da',
   appName: 'eco-ai-food-lens',
   webDir: 'dist',
-  server: {
+  server: process.env.NODE_ENV === 'development' ? {
     url: 'https://3d9d9ebd-5686-4720-ac42-85677832f2da.lovableproject.com?forceHideBadge=true',
     cleartext: true
-  },
+  } : undefined,
   plugins: {
     Camera: {
       permissions: ['camera']

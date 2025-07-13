@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Scan, Camera as CameraIcon, Image, Leaf } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
+import { validateBarcode, sanitizeBarcode, scanRateLimiter } from '@/lib/validation';
 
 interface BarcodeScannerProps {
   onScanResult: (barcode: string) => void;
@@ -14,6 +15,16 @@ export function BarcodeScanner({ onScanResult }: BarcodeScannerProps) {
 
   const scanBarcode = async () => {
     try {
+      // Rate limiting check
+      if (!scanRateLimiter.isAllowed('barcode_scan')) {
+        toast({
+          title: "Rate limit exceeded",
+          description: "Please wait before scanning again",
+          variant: "destructive"
+        });
+        return;
+      }
+
       setIsScanning(true);
       
       const image = await Camera.getPhoto({
@@ -35,12 +46,24 @@ export function BarcodeScanner({ onScanResult }: BarcodeScannerProps) {
       
       const randomBarcode = productBarcodes[Math.floor(Math.random() * productBarcodes.length)];
       
+      // Validate and sanitize barcode
+      if (!validateBarcode(randomBarcode)) {
+        toast({
+          title: "Invalid barcode",
+          description: "The scanned code is not in a valid format",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      const sanitizedBarcode = sanitizeBarcode(randomBarcode);
+      
       toast({
         title: "Product Scanned Successfully!",
-        description: `Analyzing barcode: ${randomBarcode}`
+        description: `Analyzing barcode: ${sanitizedBarcode}`
       });
       
-      onScanResult(randomBarcode);
+      onScanResult(sanitizedBarcode);
       
     } catch (error) {
       console.error('Error scanning barcode:', error);
@@ -56,6 +79,16 @@ export function BarcodeScanner({ onScanResult }: BarcodeScannerProps) {
 
   const scanFromGallery = async () => {
     try {
+      // Rate limiting check
+      if (!scanRateLimiter.isAllowed('image_scan')) {
+        toast({
+          title: "Rate limit exceeded",
+          description: "Please wait before scanning again",
+          variant: "destructive"
+        });
+        return;
+      }
+
       setIsScanning(true);
       
       const image = await Camera.getPhoto({
@@ -76,12 +109,24 @@ export function BarcodeScanner({ onScanResult }: BarcodeScannerProps) {
       
       const randomBarcode = productBarcodes[Math.floor(Math.random() * productBarcodes.length)];
       
+      // Validate and sanitize barcode
+      if (!validateBarcode(randomBarcode)) {
+        toast({
+          title: "Invalid barcode",
+          description: "The detected code is not in a valid format",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      const sanitizedBarcode = sanitizeBarcode(randomBarcode);
+      
       toast({
         title: "Image Analyzed Successfully!",
         description: `Product detected from image`
       });
       
-      onScanResult(randomBarcode);
+      onScanResult(sanitizedBarcode);
       
     } catch (error) {
       console.error('Error analyzing image:', error);
