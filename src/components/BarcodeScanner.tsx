@@ -34,37 +34,26 @@ export function BarcodeScanner({ onScanResult }: BarcodeScannerProps) {
         source: CameraSource.Camera
       });
 
-      // Extract barcode from image metadata or filename for demo
-      // In a real app, you'd use a barcode detection library like ZXing or QuaggaJS
+      // For demo purposes: simulate consistent barcode detection
+      // In production, this would use a real barcode detection library like ZXing
       let detectedBarcode = '';
       
-      // For demo: extract barcode from image data URL or use timestamp-based detection
       if (image.dataUrl) {
-        // Simulate barcode detection based on image timestamp/content
-        const imageData = image.dataUrl;
-        const timestamp = Date.now();
+        // Create a more realistic simulation that maintains consistency
+        // Use a fixed barcode for demo to show consistent product detection
+        detectedBarcode = '0049000042566'; // Coca-Cola Classic - consistent for demo
         
-        // Create a more realistic barcode based on image characteristics
-        const productDatabase = {
-          '0049000042566': 'Coca-Cola Classic',
-          '7622210151779': 'Nutella Hazelnut Spread', 
-          '3017620422003': 'Organic Almond Butter',
-          '0011110004055': 'Tropicana Orange Juice',
-          '0028400064316': 'Pepsi Cola',
-          '0123456789012': 'Generic Product A',
-          '0987654321098': 'Generic Product B'
-        };
+        // Log the simulated detection
+        console.log(`Camera scan detected barcode: ${detectedBarcode} (Coca-Cola Classic)`);
         
-        // Use image characteristics to determine barcode (more realistic simulation)
-        const imageHash = imageData.length + timestamp;
-        const barcodeKeys = Object.keys(productDatabase);
-        const selectedIndex = imageHash % barcodeKeys.length;
-        detectedBarcode = barcodeKeys[selectedIndex];
-        
-        console.log(`Simulated barcode detection: ${detectedBarcode} for product: ${productDatabase[detectedBarcode]}`);
+        // In a real app, you would:
+        // 1. Use a barcode detection library (ZXing, QuaggaJS, etc.)
+        // 2. Process the camera image to find barcode patterns
+        // 3. Decode the barcode data
+        // 4. Return the actual UPC/EAN code
       }
-      
-      // Validate and sanitize detected barcode
+
+      // Validate detected barcode
       if (!detectedBarcode || !validateBarcode(detectedBarcode)) {
         toast({
           title: "No barcode detected",
@@ -116,34 +105,24 @@ export function BarcodeScanner({ onScanResult }: BarcodeScannerProps) {
         source: CameraSource.Photos
       });
 
-      // Analyze image for barcode/label detection
+      // For demo purposes: simulate image-based product detection
+      // In production, this would use AI/ML for product recognition
       let detectedBarcode = '';
       
       if (image.dataUrl) {
-        // Extract barcode from image analysis (simulated)
-        const imageData = image.dataUrl;
-        const timestamp = Date.now();
+        // For gallery images, simulate detection of a different product
+        detectedBarcode = '7622210151779'; // Nutella - consistent for image upload demo
         
-        const productDatabase = {
-          '0049000042566': 'Coca-Cola Classic',
-          '7622210151779': 'Nutella Hazelnut Spread',
-          '3017620422003': 'Organic Almond Butter', 
-          '0011110004055': 'Tropicana Orange Juice',
-          '0028400064316': 'Pepsi Cola',
-          '0123456789012': 'Generic Product A',
-          '0987654321098': 'Generic Product B'
-        };
+        console.log(`Image analysis detected barcode: ${detectedBarcode} (Nutella Hazelnut Spread)`);
         
-        // Use image characteristics for consistent detection
-        const imageHash = imageData.length + timestamp;
-        const barcodeKeys = Object.keys(productDatabase);
-        const selectedIndex = imageHash % barcodeKeys.length;
-        detectedBarcode = barcodeKeys[selectedIndex];
-        
-        console.log(`Image analysis detected barcode: ${detectedBarcode} for product: ${productDatabase[detectedBarcode]}`);
+        // In a real app, you would:
+        // 1. Send image to AI service (Google Vision, AWS Rekognition, etc.)
+        // 2. Use OCR to read text/barcodes from product labels
+        // 3. Match product information against databases
+        // 4. Return the identified product barcode
       }
-      
-      // Validate and sanitize detected barcode
+
+      // Validate detected barcode
       if (!detectedBarcode || !validateBarcode(detectedBarcode)) {
         toast({
           title: "No product detected",
@@ -224,10 +203,14 @@ export function BarcodeScanner({ onScanResult }: BarcodeScannerProps) {
           Upload Product Image
         </Button>
         
-        <div className="text-center space-y-2">
-          <p className="text-xs text-muted-foreground">
-            Supports barcodes, QR codes, and product labels
+        {/* Demo Mode Indicator */}
+        <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg p-3">
+          <p className="text-xs text-amber-700 dark:text-amber-300 text-center font-medium">
+            📱 Demo Mode: Camera → Coca-Cola | Gallery → Nutella
           </p>
+        </div>
+        
+        <div className="text-center">
           <p className="text-xs text-primary font-medium">
             🌱 Powered by AI • 🔬 Scientific Data • 🌍 Environmental Impact
           </p>
