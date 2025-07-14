@@ -181,10 +181,10 @@ export function BarcodeScanner({ onScanResult }: BarcodeScannerProps) {
       <CardHeader className="text-center pb-4">
         <CardTitle className="flex items-center justify-center gap-2 text-xl">
           <Leaf className="h-6 w-6 text-primary" />
-          GreenTrace Scanner
+          GreenLens Scanner
         </CardTitle>
         <p className="text-sm text-muted-foreground">
-          Scan products for instant AI-powered insights
+          Scan products for instant evidence-based insights
         </p>
       </CardHeader>
       <CardContent className="space-y-6">
@@ -235,3 +235,4 @@ export function BarcodeScanner({ onScanResult }: BarcodeScannerProps) {
     </Card>
   );
 }
+

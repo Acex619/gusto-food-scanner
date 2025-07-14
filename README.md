@@ -1,8 +1,8 @@
-# GreenTrace – The Real-Time Food Transparency Tool
+# GreenLens – The Real-Time Food Transparency Tool
 
-GreenTrace is a modern, evidence-based application that empowers consumers to make informed food choices by providing comprehensive analysis of food products through barcode and QR code scanning. Get instant insights about environmental impact, nutritional value, GMO presence, and potential safety concerns, all backed by scientific evidence.
+GreenLens is a modern, evidence-based application that empowers consumers to make informed food choices by providing comprehensive analysis of food products through barcode and QR code scanning. Get instant insights about environmental impact, nutritional value, GMO presence, and potential safety concerns, all backed by scientific evidence.
 
-![GreenTrace Banner](public/placeholder.svg)
+![GreenLens Logo](public/greenlens-logo.svg)
 
 ## Features
 
@@ -82,6 +82,68 @@ npx cap open android
 # or
 npx cap open ios
 ```
+
+## Online Testing
+
+You can test GreenTrace online without installing anything:
+
+### Deployment Options
+
+1. **Deploy on Vercel**:
+   ```bash
+   npm install -g vercel
+   vercel --name food-lens-app
+   ```
+   This will create a URL like `food-lens-app.vercel.app`
+
+2. **Deploy on Netlify**:
+   ```bash
+   npm install -g netlify-cli
+   netlify deploy
+   ```
+   When satisfied with the preview, deploy to production:
+   ```bash
+   netlify deploy --prod
+   ```
+
+### Quick Deployment
+
+A deployment helper script is included to make the process easier:
+
+```bash
+# Run the deployment helper
+node deploy.js
+```
+
+This interactive script will:
+1. Build your project
+2. Help you choose a deployment platform (Vercel, Netlify, or GitHub Pages)
+3. Guide you through the deployment process
+4. Provide the URL where your app is accessible
+
+### Quick Deployment to Vercel
+
+To deploy to Vercel with a custom name (to avoid name conflicts):
+
+```bash
+# Run the simplified Vercel deployment script
+node deploy-vercel.js
+```
+
+This script will:
+1. Build your project
+2. Install Vercel CLI if needed
+3. Deploy with your chosen unique name
+4. Provide you with a URL like https://your-chosen-name.vercel.app
+
+### Usage Instructions for Online Version
+
+1. Open the app link on your mobile device (recommended) or desktop
+2. Grant camera permissions when prompted
+3. Point your camera at a food product barcode or QR code
+4. View the comprehensive analysis with environmental impact and nutrition data
+
+For the best experience, use a recent version of Chrome, Safari, or Firefox on a mobile device.
 
 ## Contributing
 
