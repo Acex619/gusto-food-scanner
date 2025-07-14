@@ -29,17 +29,25 @@ export function BarcodeScanner({ onScanResult }: BarcodeScannerProps) {
     
     ctx.drawImage(img, 0, 0);
 
-    // Configure ZXing reader
+    // Configure ZXing reader with support for both barcodes and QR codes
     const hints = new Map();
     const formats = [
+      // Standard product barcodes
       BarcodeFormat.EAN_13,
       BarcodeFormat.EAN_8,
       BarcodeFormat.UPC_A,
       BarcodeFormat.UPC_E,
       BarcodeFormat.CODE_128,
       BarcodeFormat.CODE_39,
+      // QR code format
+      BarcodeFormat.QR_CODE,
+      // Additional formats for better coverage
+      BarcodeFormat.DATA_MATRIX,
+      BarcodeFormat.AZTEC,
     ];
     hints.set(DecodeHintType.POSSIBLE_FORMATS, formats);
+    // Improve accuracy for various lighting conditions
+    hints.set(DecodeHintType.TRY_HARDER, true);
     
     const reader = new BrowserMultiFormatReader(hints);
     // Use decodeFromImage which expects an HTMLImageElement
@@ -173,7 +181,7 @@ export function BarcodeScanner({ onScanResult }: BarcodeScannerProps) {
       <CardHeader className="text-center pb-4">
         <CardTitle className="flex items-center justify-center gap-2 text-xl">
           <Leaf className="h-6 w-6 text-primary" />
-          EcoFoodAI Scanner
+          GreenTrace Scanner
         </CardTitle>
         <p className="text-sm text-muted-foreground">
           Scan products for instant AI-powered insights
@@ -201,7 +209,7 @@ export function BarcodeScanner({ onScanResult }: BarcodeScannerProps) {
           ) : (
             <>
               <CameraIcon className="h-5 w-5 mr-3" />
-              Scan Barcode
+              Scan Product
             </>
           )}
         </Button>
@@ -220,7 +228,7 @@ export function BarcodeScanner({ onScanResult }: BarcodeScannerProps) {
         
         <div className="text-center">
           <p className="text-xs text-primary font-medium">
-            🌱 Powered by AI • 🔬 Scientific Data • 🌍 Environmental Impact
+            🌱 Supports Barcodes & QR Codes • 🔬 Scientific Evidence-Based • 🌍 Environmental Impact
           </p>
         </div>
       </CardContent>

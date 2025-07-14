@@ -1,8 +1,8 @@
 import { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'app.lovable.3d9d9ebd56864720ac4285677832f2da',
-  appName: 'eco-ai-food-lens',
+  appId: 'com.greentrace.app',
+  appName: 'GreenTrace',
   webDir: 'dist',
   server: process.env.NODE_ENV === 'development' ? {
     url: 'https://3d9d9ebd-5686-4720-ac42-85677832f2da.lovableproject.com?forceHideBadge=true',
