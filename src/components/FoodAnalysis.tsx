@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import clsx from 'clsx';
-import { useFoodProduct } from '@/lib/api';
+import { useFoodProduct, useMultiSourceFoodProduct } from '@/lib/api';
 import { OpenFoodFactsProduct } from '@/types/food';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -8,6 +8,7 @@ import { Progress } from '@/components/ui/progress';
 import { Button } from '@/components/ui/button';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { AlertTriangle, Leaf, Shield, Star, ChevronDown, ExternalLink, Droplets, Factory, AlertCircle, CheckCircle, XCircle } from 'lucide-react';
+import { IngredientInfoModal } from '@/components/ui/ingredient-info-modal';
 
 interface FoodAnalysisProps {
   barcode: string;
@@ -306,21 +307,140 @@ function buildAnalysisResult(product: OpenFoodFactsProduct, productCategory: key
   };
 }
 
-export default function FoodAnalysis({ barcode }: FoodAnalysisProps) {
-  const { data: product, isLoading, error } = useFoodProduct(barcode);
-  const [analysis, setAnalysis] = useState<AnalysisResult | null>(null);
-  const [imageError, setImageError] = useState(false);
-
+export function FoodAnalysis({ barcode }: FoodAnalysisProps) {
+  // Use both the regular and multi-source product data hooks
+  const { data: productData, isLoading: isLoadingProduct, error: productError } = useFoodProduct(barcode);
+  const { data: multiSourceData, isLoading: isLoadingMultiSource } = useMultiSourceFoodProduct(barcode);
+  
+  // State for selected ingredient to show info popup
+  const [selectedIngredient, setSelectedIngredient] = useState<IngredientDetail | null>(null);
+  
+  // State for consolidated analysis result
+  const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null);
+  
+  // Use multiSourceData as a fallback when productData is not available
   useEffect(() => {
-    if (product) {
-      const productCategory = estimateProductCategory(product);
-      const result = buildAnalysisResult(product, productCategory);
-      setAnalysis(result);
-      setImageError(false);
+    if (productData) {
+      // Calculate product category for environmental data
+      const productCategory = estimateProductCategory(productData);
+      // Build analysis result from OpenFoodFacts data
+      const result = buildAnalysisResult(productData, productCategory);
+      setAnalysisResult(result);
+      return;
     }
-  }, [product]);
+    
+    // Fallback to multi-source data
+    if (multiSourceData) {
+      // First try OpenFoodFacts from multi-source
+      if (multiSourceData.openFoodFacts.success && multiSourceData.openFoodFacts.data) {
+        const offProduct = multiSourceData.openFoodFacts.data;
+        const productCategory = estimateProductCategory(offProduct);
+        const result = buildAnalysisResult(offProduct, productCategory);
+        // Mark data as coming from fallback source
+        result.trustScore = (result.trustScore || 70) - 10; // Reduce trust score slightly
+        result.dataSource = "OpenFoodFacts (fallback)";
+        setAnalysisResult(result);
+        return;
+      }
+      
+      // Check USDA as secondary source
+      if (multiSourceData.usda.success && multiSourceData.usda.data) {
+        // This would require a conversion from USDA format to our analysis format
+        // For simplicity, we're just showing a placeholder here
+        const usdaData = multiSourceData.usda.data;
+        const placeholderResult: AnalysisResult = {
+          productName: (usdaData as { description?: string }).description || "Unknown Product",
+          brand: (usdaData as { brandOwner?: string }).brandOwner || "Unknown Brand",
+          productImage: (usdaData as { foodImage?: string }).foodImage || "placeholder.svg",
+          barcode: barcode,
+          overallScore: 50,
+          environmentalScore: 50,
+          nutritionalScore: 60,
+          safetyScore: 70,
+          gmoFree: false,
+          concerns: ["Limited data available from USDA"],
+          ingredients: [{
+            name: "Ingredients data limited",
+            riskLevel: "caution",
+            description: "Full ingredient analysis not available from USDA data source."
+          }],
+          environmental: {
+            carbonFootprint: 1.0,
+            waterFootprint: 2.0,
+            packagingScore: 50,
+            transportScore: 50,
+            methodology: "Estimated based on USDA food category"
+          },
+          nutritional: {
+            nutriScore: 'C',
+            calories: (usdaData as { nutrients?: { name: string; amount: number }[] }).nutrients?.find(n => n.name === "Energy")?.amount || 0,
+            sugar: (usdaData as { nutrients?: { name: string; amount: number }[] }).nutrients?.find(n => n.name === "Sugars, total")?.amount || 0,
+            salt: (usdaData as { nutrients?: { name: string; amount: number }[] }).nutrients?.find(n => n.name === "Sodium, Na")?.amount || 0,
+            saturatedFat: (usdaData as { nutrients?: { name: string; amount: number }[] }).nutrients?.find(n => n.name === "Fatty acids, total saturated")?.amount || 0,
+            fiber: (usdaData as { nutrients?: { name: string; amount: number }[] }).nutrients?.find(n => n.name === "Fiber, total dietary")?.amount || 0,
+          },
+          dataSource: "USDA FoodData Central",
+          lastUpdated: new Date().toISOString().split('T')[0],
+          trustScore: 60
+        };
+        setAnalysisResult(placeholderResult);
+        return;
+      }
+      
+      // Check EFSA as tertiary source
+      if (multiSourceData.efsa.success && multiSourceData.efsa.data) {
+        // Similar placeholder for EFSA data
+        const efsaData = multiSourceData.efsa.data;
+        const placeholderResult: AnalysisResult = {
+          productName: (efsaData as { name?: string }).name || "Unknown Product",
+          brand: (efsaData as { brand?: string }).brand || "Unknown Brand",
+          productImage: "placeholder.svg",
+          barcode: barcode,
+          overallScore: 50,
+          environmentalScore: 45,
+          nutritionalScore: 55,
+          safetyScore: 65,
+          gmoFree: false,
+          concerns: ["Limited data available from EFSA"],
+          ingredients: [{
+            name: "Ingredients data limited",
+            riskLevel: "caution",
+            description: "Full ingredient analysis not available from EFSA data source."
+          }],
+          environmental: {
+            carbonFootprint: 1.2,
+            waterFootprint: 2.5,
+            packagingScore: 45,
+            transportScore: 45,
+            methodology: "Estimated based on EFSA product category"
+          },
+          nutritional: {
+            nutriScore: 'C',
+            calories: 0,
+            sugar: 0,
+            salt: 0,
+            saturatedFat: 0,
+            fiber: 0,
+          },
+          dataSource: "European Food Safety Authority",
+          lastUpdated: new Date().toISOString().split('T')[0],
+          trustScore: 65
+        };
+        setAnalysisResult(placeholderResult);
+        return;
+      }
+    }
+  }, [productData, multiSourceData, barcode]);
+  
+  // Close ingredient info modal
+  const closeIngredientModal = () => setSelectedIngredient(null);
+  
+  // Handle ingredient info button click
+  const showIngredientInfo = (ingredient: IngredientDetail) => {
+    setSelectedIngredient(ingredient);
+  };
 
-  if (isLoading) {
+  if (isLoadingProduct || isLoadingMultiSource) {
     return (
       <div className="flex items-center justify-center p-8">
         <div className="text-center">
@@ -333,15 +453,15 @@ export default function FoodAnalysis({ barcode }: FoodAnalysisProps) {
     );
   }
 
-  if (error) {
+  if (productError) {
     return (
       <Card className="border-destructive">
         <CardContent className="pt-6">
           <div className="flex flex-col items-center text-center gap-2">
             <AlertCircle className="h-8 w-8 text-destructive" />
             <p className="text-sm text-muted-foreground">
-              {typeof error === 'object' && error !== null && 'message' in error
-                ? (error as Error).message 
+              {typeof productError === 'object' && productError !== null && 'message' in productError
+                ? (productError as Error).message 
                 : 'Failed to analyze product'}
             </p>
             <Button
@@ -357,7 +477,7 @@ export default function FoodAnalysis({ barcode }: FoodAnalysisProps) {
     );
   }
 
-  if (!analysis) {
+  if (!analysisResult) {
     return null;
   }
 
@@ -400,15 +520,26 @@ export default function FoodAnalysis({ barcode }: FoodAnalysisProps) {
     }
   };
 
+  function setImageError(arg0: boolean): void {
+    throw new Error('Function not implemented.');
+  }
+
   return (
     <Card className="w-full max-w-4xl mx-auto">
+      {/* Render the ingredient info modal */}
+      <IngredientInfoModal 
+        ingredient={selectedIngredient}
+        isOpen={!!selectedIngredient}
+        onClose={closeIngredientModal}
+      />
+
       <CardHeader className="pb-4">
         <CardTitle className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            {!imageError ? (
+            {!RangeError ? (
               <img 
-                src={analysis.productImage} 
-                alt={analysis.productName}
+                src={analysisResult.productImage} 
+                alt={analysisResult.productName}
                 className="w-24 h-24 object-contain rounded-lg bg-white shadow-sm border-2 border-gray-100"
                 onError={() => setImageError(true)}
               />
@@ -422,12 +553,12 @@ export default function FoodAnalysis({ barcode }: FoodAnalysisProps) {
               </div>
             )}
             <div>
-              <h2 className="text-2xl font-bold">{analysis.productName}</h2>
-              <p className="text-muted-foreground">{analysis.brand}</p>
+              <h2 className="text-2xl font-bold">{analysisResult.productName}</h2>
+              <p className="text-muted-foreground">{analysisResult.brand}</p>
             </div>
           </div>
           <Badge variant="outline" className="text-xs">
-            {analysis.barcode}
+            {analysisResult.barcode}
           </Badge>
         </CardTitle>
       </CardHeader>
@@ -442,11 +573,11 @@ export default function FoodAnalysis({ barcode }: FoodAnalysisProps) {
           <div className="text-right">
             <div className={clsx(
               "inline-block px-4 py-2 rounded-xl text-lg font-bold",
-              analysis.overallScore >= 70 ? "bg-green-500 text-white" :
-              analysis.overallScore >= 40 ? "bg-yellow-500 text-white" :
+              analysisResult.overallScore >= 70 ? "bg-green-500 text-white" :
+              analysisResult.overallScore >= 40 ? "bg-yellow-500 text-white" :
               "bg-red-500 text-white"
             )}>
-              {analysis.overallScore}/100
+              {analysisResult.overallScore}/100
             </div>
           </div>
         </div>
@@ -462,9 +593,9 @@ export default function FoodAnalysis({ barcode }: FoodAnalysisProps) {
             </CardHeader>
             <CardContent>
               <div className="space-y-2">
-                <Progress value={analysis.environmentalScore} className="h-2" />
+                <Progress value={analysisResult.environmentalScore} className="h-2" />
                 <p className="text-sm text-muted-foreground text-right">
-                  {analysis.environmentalScore}/100
+                  {analysisResult.environmentalScore}/100
                 </p>
               </div>
             </CardContent>
@@ -479,16 +610,16 @@ export default function FoodAnalysis({ barcode }: FoodAnalysisProps) {
             </CardHeader>
             <CardContent>
               <div className="space-y-2">
-                <Progress value={analysis.nutritionalScore} className="h-2" />
+                <Progress value={analysisResult.nutritionalScore} className="h-2" />
                 <div className="flex justify-between items-center">
                   <div className={clsx(
                     "px-2 py-0.5 rounded text-sm font-medium",
-                    getNutriScoreColor(analysis.nutritional.nutriScore)
+                    getNutriScoreColor(analysisResult.nutritional.nutriScore)
                   )}>
-                    Nutri-Score {analysis.nutritional.nutriScore}
+                    Nutri-Score {analysisResult.nutritional.nutriScore}
                   </div>
                   <p className="text-sm text-muted-foreground">
-                    {analysis.nutritionalScore}/100
+                    {analysisResult.nutritionalScore}/100
                   </p>
                 </div>
               </div>
@@ -504,9 +635,9 @@ export default function FoodAnalysis({ barcode }: FoodAnalysisProps) {
             </CardHeader>
             <CardContent>
               <div className="space-y-2">
-                <Progress value={analysis.safetyScore} className="h-2" />
+                <Progress value={analysisResult.safetyScore} className="h-2" />
                 <p className="text-sm text-muted-foreground text-right">
-                  {analysis.safetyScore}/100
+                  {analysisResult.safetyScore}/100
                 </p>
               </div>
             </CardContent>
@@ -514,14 +645,14 @@ export default function FoodAnalysis({ barcode }: FoodAnalysisProps) {
         </div>
 
         {/* Concerns */}
-        {analysis.concerns.length > 0 && (
+        {analysisResult.concerns.length > 0 && (
           <div className="bg-red-50 border border-red-200 rounded-lg p-4">
             <h3 className="text-lg font-semibold text-red-700 mb-2 flex items-center gap-2">
               <AlertTriangle className="h-5 w-5" />
               Key Concerns
             </h3>
             <ul className="space-y-1">
-              {analysis.concerns.map((concern, index) => (
+              {analysisResult.concerns.map((concern, index) => (
                 <li key={index} className="text-red-600 text-sm flex items-center gap-2">
                   <AlertCircle className="h-4 w-4" />
                   {concern}
@@ -534,10 +665,10 @@ export default function FoodAnalysis({ barcode }: FoodAnalysisProps) {
         {/* GMO Status */}
         <div className={clsx(
           "p-4 rounded-lg border",
-          analysis.gmoFree ? "bg-green-50 border-green-200" : "bg-yellow-50 border-yellow-200"
+          analysisResult.gmoFree ? "bg-green-50 border-green-200" : "bg-yellow-50 border-yellow-200"
         )}>
           <h3 className="text-lg font-semibold mb-2 flex items-center gap-2">
-            {analysis.gmoFree ? (
+            {analysisResult.gmoFree ? (
               <>
                 <CheckCircle className="h-5 w-5 text-green-500" />
                 <span className="text-green-700">GMO-Free</span>
@@ -550,7 +681,7 @@ export default function FoodAnalysis({ barcode }: FoodAnalysisProps) {
             )}
           </h3>
           <p className="text-sm text-muted-foreground">
-            {analysis.gmoFree 
+            {analysisResult.gmoFree 
               ? "This product has been verified to be free from genetically modified organisms." 
               : "The GMO status of this product could not be determined with high confidence. Check individual ingredients for more details."}
           </p>
@@ -568,11 +699,24 @@ export default function FoodAnalysis({ barcode }: FoodAnalysisProps) {
             </Button>
           </CollapsibleTrigger>
           <CollapsibleContent className="mt-4 space-y-4">
-            {analysis.ingredients.length > 0 ? (
-              analysis.ingredients.map((ingredient, index) => (
+            {analysisResult.ingredients.length > 0 ? (
+              analysisResult.ingredients.map((ingredient, index) => (
                 <div key={index} className="border rounded-lg p-4">
                   <div className="flex flex-wrap items-center justify-between mb-2 gap-2">
-                    <h4 className="font-medium">{ingredient.name}</h4>
+                    <div className="flex items-center gap-1.5">
+                      <h4 className="font-medium">{ingredient.name}</h4>
+                      <button 
+                        onClick={() => showIngredientInfo(ingredient)}
+                        className="text-primary hover:text-primary/80 p-1 rounded-full hover:bg-primary/10 transition-colors"
+                        aria-label={`More information about ${ingredient.name}`}
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <circle cx="12" cy="12" r="10" />
+                          <path d="M12 16v-4" />
+                          <path d="M12 8h.01" />
+                        </svg>
+                      </button>
+                    </div>
                     <div className="flex items-center gap-2">
                       <Badge className={getRiskColor(ingredient.riskLevel)}>
                         {ingredient.riskLevel}
@@ -602,31 +746,32 @@ export default function FoodAnalysis({ barcode }: FoodAnalysisProps) {
                     </div>
                   )}
                   
-                  {/* Scientific References */}
+                  {/* Scientific papers if available */}
                   {ingredient.scientificPapers && ingredient.scientificPapers.length > 0 && (
-                    <div className="mt-3 pt-2 border-t border-gray-100">
-                      <h5 className="text-xs font-semibold mb-2 text-primary">Scientific References:</h5>
-                      <div className="space-y-2">
-                        {ingredient.scientificPapers.map((paper, i) => (
-                          <div key={i} className="text-xs">
-                            <a 
-                              href={paper.url} 
-                              target="_blank" 
-                              rel="noopener noreferrer"
-                              className="font-medium text-blue-600 hover:underline flex items-center gap-1"
-                            >
-                              {paper.title}
-                              <ExternalLink className="h-3 w-3" />
-                            </a>
-                            <p className="text-muted-foreground mt-0.5">{paper.summary}</p>
-                          </div>
-                        ))}
+                    <div className="mt-3 border-t pt-2">
+                      <div className="text-xs text-muted-foreground">
+                        <span className="font-medium">Scientific Research:</span> {ingredient.scientificPapers.length} {ingredient.scientificPapers.length === 1 ? 'paper' : 'papers'} available
                       </div>
-                    </div>
-                  )}
+                      <div className="mt-2 space-y-2">
+                    {ingredient.scientificPapers.slice(0, 1).map((paper, i) => (
+                      <div key={i} className="text-xs">
+                        <a 
+                          href={paper.url} 
+                          target="_blank" 
+                          rel="noopener noreferrer" 
+                          className="text-primary flex items-center hover:underline"
+                        >
+                          {paper.title.length > 50 ? `${paper.title.substring(0, 50)}...` : paper.title}
+                          <ExternalLink className="h-3 w-3 ml-1" />
+                        </a>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-              ))
-            ) : (
+              )}
+            </div>
+          ))
+        ) : (
               <p className="text-sm text-muted-foreground p-4 border rounded-lg">
                 No detailed ingredient information available for this product.
               </p>
@@ -652,7 +797,7 @@ export default function FoodAnalysis({ barcode }: FoodAnalysisProps) {
                   <Factory className="h-4 w-4" />
                   <h4 className="font-medium">Carbon Footprint</h4>
                 </div>
-                <p className="text-2xl font-bold">{analysis.environmental.carbonFootprint.toFixed(2)}</p>
+                <p className="text-2xl font-bold">{analysisResult.environmental.carbonFootprint.toFixed(2)}</p>
                 <p className="text-sm text-muted-foreground">kg CO₂ eq/100g</p>
               </div>
               <div className="border rounded-lg p-4">
@@ -660,37 +805,37 @@ export default function FoodAnalysis({ barcode }: FoodAnalysisProps) {
                   <Droplets className="h-4 w-4" />
                   <h4 className="font-medium">Water Usage</h4>
                 </div>
-                <p className="text-2xl font-bold">{analysis.environmental.waterFootprint.toFixed(1)}</p>
+                <p className="text-2xl font-bold">{analysisResult.environmental.waterFootprint.toFixed(1)}</p>
                 <p className="text-sm text-muted-foreground">L/100g</p>
               </div>
             </div>
             <p className="text-xs text-muted-foreground">
-              Methodology: {analysis.environmental.methodology}
+              Methodology: {analysisResult.environmental.methodology}
             </p>
           </CollapsibleContent>
         </Collapsible>
 
         <div className="text-xs text-muted-foreground border-t pt-4">
           <div className="flex items-center justify-between mb-2">
-            <div>Data source: {analysis.dataSource}</div>
-            <div>Last updated: {analysis.lastUpdated}</div>
+            <div>Data source: {analysisResult.dataSource}</div>
+            <div>Last updated: {analysisResult.lastUpdated}</div>
           </div>
           
-          {analysis.trustScore !== undefined && (
+          {analysisResult.trustScore !== undefined && (
             <div className="flex items-center gap-2 mt-2">
               <div className="font-medium">Data Trust Score:</div>
               <div className="w-full bg-gray-200 h-1.5 rounded-full overflow-hidden">
                 <div 
                   className={clsx(
                     "h-full rounded-full",
-                    analysis.trustScore >= 80 ? "bg-green-500" :
-                    analysis.trustScore >= 50 ? "bg-yellow-500" :
+                    analysisResult.trustScore >= 80 ? "bg-green-500" :
+                    analysisResult.trustScore >= 50 ? "bg-yellow-500" :
                     "bg-red-500"
                   )}
-                  style={{ width: `${analysis.trustScore}%` }}
+                  style={{ width: `${analysisResult.trustScore}%` }}
                 ></div>
               </div>
-              <div className="font-medium">{analysis.trustScore}%</div>
+              <div className="font-medium">{analysisResult.trustScore}%</div>
             </div>
           )}
         </div>

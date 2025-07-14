@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { BarcodeScanner } from '@/components/BarcodeScanner';
-import FoodAnalysis from '@/components/FoodAnalysis';
+import { FoodAnalysis } from '@/components/FoodAnalysis';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Sparkles, Leaf, Star } from 'lucide-react';
 

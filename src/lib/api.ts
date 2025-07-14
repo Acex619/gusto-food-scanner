@@ -268,6 +268,117 @@ export const getFoodProduct = async (barcode: string): Promise<OpenFoodFactsProd
   }
 };
 
+// Enhanced multi-source product lookup function
+export const fetchProductFromAllSources = async (barcode: string) => {
+  // Initialize response tracker
+  const responses = {
+    openFoodFacts: { success: false, data: null as OpenFoodFactsProduct | null, error: null as string | null },
+    usda: { success: false, data: null as unknown | null, error: null as string | null },
+    efsa: { success: false, data: null as unknown | null, error: null as string | null },
+    // Could add more sources as needed
+  };
+  
+  // Primary lookup: Open Food Facts
+  try {
+    const response = await openFoodFactsApi.get(`/product/${barcode}.json`);
+    const data = response.data as { status: number; product: OpenFoodFactsProduct };
+    
+    if (data.status === 1) {
+      responses.openFoodFacts = { 
+        success: true, 
+        data: data.product, 
+        error: null 
+      };
+    } else {
+      responses.openFoodFacts = { 
+        success: false, 
+        data: null, 
+        error: 'Product not found in Open Food Facts' 
+      };
+    }
+  } catch (error: unknown) {
+    responses.openFoodFacts = { 
+      success: false, 
+      data: null, 
+      error: (typeof error === 'object' && error !== null && 'message' in error) ? (error as Error).message : 'Error fetching from Open Food Facts' 
+    };
+  }
+  
+  // Secondary lookup: USDA (US products)
+  try {
+    // Note: This is a simulated USDA lookup as they use different identifiers
+    // In a real app, you'd need to map UPC/EAN to FDC IDs or use their search API
+    const searchQuery = barcode.startsWith('0') ? barcode.substring(1) : barcode;
+    const response = await usdaApi.get('/foods/search', {
+      params: {
+        query: searchQuery,
+        pageSize: 1,
+        // API key would be needed here
+        // api_key: process.env.USDA_API_KEY
+      }
+    });
+    
+    const data = response.data as { foods?: unknown[] };
+    
+    if (data.foods && data.foods.length > 0) {
+      responses.usda = { 
+        success: true, 
+        data: data.foods[0], 
+        error: null 
+      };
+    } else {
+      responses.usda = { 
+        success: false, 
+        data: null, 
+        error: 'Product not found in USDA database' 
+      };
+    }
+  } catch (error: unknown) {
+    responses.usda = { 
+      success: false, 
+      data: null, 
+      error: (typeof error === 'object' && error !== null && 'message' in error) ? (error as Error).message : 'Error fetching from USDA' 
+    };
+  }
+  
+  // Tertiary lookup: EFSA (European products)
+  try {
+    // This is a simulated EFSA lookup
+    // EFSA doesn't provide a direct barcode lookup API
+    // In a real app, you'd need to use their search endpoints with appropriate parameters
+    const response = await efsaApi.get('/food-products/search', {
+      params: {
+        identifier: barcode,
+        limit: 1
+      }
+    });
+    
+    const data = response.data as { results?: unknown[] };
+    
+    if (data && data.results && data.results.length > 0) {
+      responses.efsa = { 
+        success: true, 
+        data: data.results[0], 
+        error: null 
+      };
+    } else {
+      responses.efsa = { 
+        success: false, 
+        data: null, 
+        error: 'Product not found in EFSA database' 
+      };
+    }
+  } catch (error: unknown) {
+    responses.efsa = { 
+      success: false, 
+      data: null, 
+      error: (typeof error === 'object' && error !== null && 'message' in error) ? (error as Error).message : 'Error fetching from EFSA' 
+    };
+  }
+  
+  return responses;
+};
+
 // Helper function to calculate overall data quality score
 function calculateDataQualityScore(product: OpenFoodFactsProduct): number {
   let score = 50; // Base score
@@ -335,5 +446,17 @@ export const analyzeImage = async (image: File): Promise<OpenFoodFactsProduct> =
 export const useImageAnalysis = () => {
   return useMutation({
     mutationFn: analyzeImage,
+  });
+};
+
+// Hook for using the multi-source product data
+export const useMultiSourceFoodProduct = (barcode: string) => {
+  return useQuery({
+    queryKey: ['multiSourceProduct', barcode],
+    queryFn: () => fetchProductFromAllSources(barcode),
+    enabled: !!barcode,
+    retry: 2,
+    staleTime: 1000 * 60 * 60, // 1 hour
+    gcTime: 1000 * 60 * 60 * 24, // 24 hours
   });
 };
