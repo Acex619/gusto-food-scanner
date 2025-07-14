@@ -1,22 +1,26 @@
-# Welcome to your Lovable project
+# EcoFoodAI Food Lens
 
-## Project info
+A modern web application that uses AI to analyze food products through barcode scanning, providing detailed information about ingredients, nutritional value, and environmental impact.
 
-**URL**: https://lovable.dev/projects/3d9d9ebd-5686-4720-ac42-85677832f2da
+## Features
 
-## How can I edit this code?
+- 🔍 Barcode scanning using device camera
+- 📸 Image upload support for barcode detection
+- 🧬 Detailed ingredient analysis
+- 🌱 Environmental impact assessment
+- 🍎 Nutritional information
+- 🧪 GMO detection and analysis
+- 📊 Comprehensive scoring system
 
-There are several ways of editing your application.
+## Tech Stack
 
-**Use Lovable**
-
-Simply visit the [Lovable Project](https://lovable.dev/projects/3d9d9ebd-5686-4720-ac42-85677832f2da) and start prompting.
-
-Changes made via Lovable will be committed automatically to this repo.
-
-**Use your preferred IDE**
-
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+- React + TypeScript
+- Vite
+- TailwindCSS
+- Capacitor for native features
+- shadcn/ui for components
+- ZXing for barcode scanning
+- React Query for data management
 
 The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
 

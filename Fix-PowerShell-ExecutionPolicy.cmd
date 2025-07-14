@@ -1,0 +1,3 @@
+@echo off
+echo Running PowerShell execution policy fix with admin privileges...
+powershell -Command "Start-Process powershell -ArgumentList '-ExecutionPolicy Bypass -File \"%~dp0Fix-PowerShell-ExecutionPolicy.ps1\"' -Verb RunAs"

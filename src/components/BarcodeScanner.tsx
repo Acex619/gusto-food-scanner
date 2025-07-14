@@ -2,9 +2,10 @@ import { useState } from 'react';
 import { Camera, CameraResultType, CameraSource } from '@capacitor/camera';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Scan, Camera as CameraIcon, Image, Leaf } from 'lucide-react';
+import { Scan, Camera as CameraIcon, Image as ImageIcon, Leaf } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { validateBarcode, sanitizeBarcode, scanRateLimiter } from '@/lib/validation';
+import { BrowserMultiFormatReader, DecodeHintType, BarcodeFormat } from '@zxing/library';
 
 interface BarcodeScannerProps {
   onScanResult: (barcode: string) => void;
@@ -12,6 +13,44 @@ interface BarcodeScannerProps {
 
 export function BarcodeScanner({ onScanResult }: BarcodeScannerProps) {
   const [isScanning, setIsScanning] = useState(false);
+
+  const processImage = async (dataUrl: string): Promise<string> => {
+    // Create an image element from the data URL
+    const img = document.createElement('img');
+    img.src = dataUrl;
+    await new Promise((resolve) => img.onload = resolve);
+
+    // Create a canvas to draw the image
+    const canvas = document.createElement('canvas');
+    canvas.width = img.width;
+    canvas.height = img.height;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) throw new Error('Could not get canvas context');
+    
+    ctx.drawImage(img, 0, 0);
+
+    // Configure ZXing reader
+    const hints = new Map();
+    const formats = [
+      BarcodeFormat.EAN_13,
+      BarcodeFormat.EAN_8,
+      BarcodeFormat.UPC_A,
+      BarcodeFormat.UPC_E,
+      BarcodeFormat.CODE_128,
+      BarcodeFormat.CODE_39,
+    ];
+    hints.set(DecodeHintType.POSSIBLE_FORMATS, formats);
+    
+    const reader = new BrowserMultiFormatReader(hints);
+    // Use decodeFromImage which expects an HTMLImageElement
+    const result = await reader.decodeFromImage(img);
+
+    if (!result) {
+      throw new Error('No barcode detected');
+    }
+
+    return result.getText();
+  };
 
   const scanBarcode = async () => {
     try {
@@ -34,30 +73,17 @@ export function BarcodeScanner({ onScanResult }: BarcodeScannerProps) {
         source: CameraSource.Camera
       });
 
-      // For demo purposes: simulate consistent barcode detection
-      // In production, this would use a real barcode detection library like ZXing
-      let detectedBarcode = '';
-      
-      if (image.dataUrl) {
-        // Create a more realistic simulation that maintains consistency
-        // Use a fixed barcode for demo to show consistent product detection
-        detectedBarcode = '0049000042566'; // Coca-Cola Classic - consistent for demo
-        
-        // Log the simulated detection
-        console.log(`Camera scan detected barcode: ${detectedBarcode} (Coca-Cola Classic)`);
-        
-        // In a real app, you would:
-        // 1. Use a barcode detection library (ZXing, QuaggaJS, etc.)
-        // 2. Process the camera image to find barcode patterns
-        // 3. Decode the barcode data
-        // 4. Return the actual UPC/EAN code
+      if (!image.dataUrl) {
+        throw new Error('No image data received from camera');
       }
 
+      const detectedBarcode = await processImage(image.dataUrl);
+
       // Validate detected barcode
-      if (!detectedBarcode || !validateBarcode(detectedBarcode)) {
+      if (!validateBarcode(detectedBarcode)) {
         toast({
-          title: "No barcode detected",
-          description: "Please ensure the barcode is clearly visible and try again",
+          title: "Invalid barcode format",
+          description: "The detected barcode is not in a valid format",
           variant: "destructive"
         });
         return;
@@ -76,7 +102,7 @@ export function BarcodeScanner({ onScanResult }: BarcodeScannerProps) {
       console.error('Error scanning barcode:', error);
       toast({
         title: "Scan Failed",
-        description: "Please try scanning again",
+        description: "Please ensure the barcode is clearly visible and try again",
         variant: "destructive"
       });
     } finally {
@@ -105,28 +131,17 @@ export function BarcodeScanner({ onScanResult }: BarcodeScannerProps) {
         source: CameraSource.Photos
       });
 
-      // For demo purposes: simulate image-based product detection
-      // In production, this would use AI/ML for product recognition
-      let detectedBarcode = '';
-      
-      if (image.dataUrl) {
-        // For gallery images, simulate detection of a different product
-        detectedBarcode = '7622210151779'; // Nutella - consistent for image upload demo
-        
-        console.log(`Image analysis detected barcode: ${detectedBarcode} (Nutella Hazelnut Spread)`);
-        
-        // In a real app, you would:
-        // 1. Send image to AI service (Google Vision, AWS Rekognition, etc.)
-        // 2. Use OCR to read text/barcodes from product labels
-        // 3. Match product information against databases
-        // 4. Return the identified product barcode
+      if (!image.dataUrl) {
+        throw new Error('No image data received');
       }
 
+      const detectedBarcode = await processImage(image.dataUrl);
+
       // Validate detected barcode
-      if (!detectedBarcode || !validateBarcode(detectedBarcode)) {
+      if (!validateBarcode(detectedBarcode)) {
         toast({
-          title: "No product detected",
-          description: "Could not detect a barcode in the image. Please try with a clearer photo",
+          title: "Invalid barcode format",
+          description: "The detected barcode is not in a valid format",
           variant: "destructive"
         });
         return;
@@ -135,8 +150,8 @@ export function BarcodeScanner({ onScanResult }: BarcodeScannerProps) {
       const sanitizedBarcode = sanitizeBarcode(detectedBarcode);
       
       toast({
-        title: "Image Analyzed Successfully!",
-        description: `Product detected from image`
+        title: "Product Scanned Successfully!",
+        description: `Analyzing barcode: ${sanitizedBarcode}`
       });
       
       onScanResult(sanitizedBarcode);
@@ -144,8 +159,8 @@ export function BarcodeScanner({ onScanResult }: BarcodeScannerProps) {
     } catch (error) {
       console.error('Error analyzing image:', error);
       toast({
-        title: "Analysis Failed",
-        description: "Please try with a clearer image",
+        title: "Scan Failed",
+        description: "Please ensure the barcode is clearly visible and try again",
         variant: "destructive"
       });
     } finally {
@@ -186,7 +201,7 @@ export function BarcodeScanner({ onScanResult }: BarcodeScannerProps) {
           ) : (
             <>
               <CameraIcon className="h-5 w-5 mr-3" />
-              Scan Live Barcode
+              Scan Barcode
             </>
           )}
         </Button>
@@ -199,16 +214,9 @@ export function BarcodeScanner({ onScanResult }: BarcodeScannerProps) {
           className="w-full h-12 border-2 border-primary/20 hover:border-primary/40 hover:bg-primary/5"
           size="lg"
         >
-          <Image className="h-4 w-4 mr-2" />
-          Upload Product Image
+          <ImageIcon className="h-4 w-4 mr-2" />
+          Upload Image
         </Button>
-        
-        {/* Demo Mode Indicator */}
-        <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg p-3">
-          <p className="text-xs text-amber-700 dark:text-amber-300 text-center font-medium">
-            📱 Demo Mode: Camera → Coca-Cola | Gallery → Nutella
-          </p>
-        </div>
         
         <div className="text-center">
           <p className="text-xs text-primary font-medium">

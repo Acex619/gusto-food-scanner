@@ -30,10 +30,10 @@ interface IngredientDetail {
 }
 
 interface EnvironmentalData {
-  carbonFootprint: number;
-  waterFootprint: number;
-  packagingScore: number;
-  transportScore: number;
+  carbonFootprint: number; // kg CO2 eq per 100g
+  waterFootprint: number; // liters per 100g
+  packagingScore: number; // 1-5 scale
+  transportScore: number; // 1-5 scale
   methodology: string;
 }
 
@@ -87,6 +87,7 @@ const BASE_WATER_FOOTPRINT = {
   'default': 2.5
 } as const;
 
+// Helper functions for calculations
 function estimateProductCategory(product: OpenFoodFactsProduct): keyof typeof TYPICAL_CO2_VALUES {
   const categories = product.categories_tags || [];
   if (categories.some(c => c.includes('beverage'))) return 'beverages';
@@ -100,7 +101,9 @@ function estimateProductCategory(product: OpenFoodFactsProduct): keyof typeof TY
 }
 
 function calculateEnvironmentalScore(product: OpenFoodFactsProduct): number {
-  let score = 50;
+  let score = 50; // Base score
+  
+  // Calculate based on packaging
   if (product.packaging) {
     const packaging = product.packaging.toLowerCase();
     if (packaging.includes('plastic')) score -= 10;
@@ -108,11 +111,27 @@ function calculateEnvironmentalScore(product: OpenFoodFactsProduct): number {
     if (packaging.includes('glass')) score += 5;
     if (packaging.includes('biodegradable')) score += 15;
   }
+  
+  // Calculate based on ingredients
   if (product.ingredients_analysis_tags) {
     if (product.ingredients_analysis_tags.includes('en:palm-oil')) score -= 15;
     if (product.ingredients_analysis_tags.includes('en:organic')) score += 10;
     if (product.ingredients_analysis_tags.includes('en:fair-trade')) score += 5;
   }
+  
+  // Consider food miles and transportation
+  const originCountry = product.countries_tags?.[0];
+  if (originCountry && originCountry.includes('en:france')) {
+    score += 10; // Local production bonus
+  }
+  
+  // Consider processing method
+  if (product.manufacturing_places) {
+    if (product.manufacturing_places.toLowerCase().includes('artisanal')) {
+      score += 5; // Small-scale production bonus
+    }
+  }
+  
   return Math.max(0, Math.min(100, score));
 }
 
@@ -129,14 +148,17 @@ function calculateNutritionalScore(product: OpenFoodFactsProduct): number {
 }
 
 function calculateSafetyScore(product: OpenFoodFactsProduct): number {
-  let score = 70;
+  let score = 70; // Base score
+  
   if (product.allergens_tags?.length) score -= product.allergens_tags.length * 5;
   if (product.additives_tags?.length) score -= product.additives_tags.length * 2;
+  
   return Math.max(0, Math.min(100, score));
 }
 
 function generateConcerns(product: OpenFoodFactsProduct): string[] {
   const concerns: string[] = [];
+  
   if (product.nutriments?.sugars_100g && product.nutriments.sugars_100g > 10) 
     concerns.push('High sugar content');
   if (product.nutriments?.salt_100g && product.nutriments.salt_100g > 1.5) 
@@ -145,6 +167,7 @@ function generateConcerns(product: OpenFoodFactsProduct): string[] {
     concerns.push('High number of additives');
   if (product.ingredients_analysis_tags?.includes('en:palm-oil')) 
     concerns.push('Contains palm oil');
+  
   return concerns;
 }
 
@@ -155,24 +178,32 @@ function calculateIngredientRiskLevel(ingredient: OpenFoodFactsProduct['ingredie
   return 'caution';
 }
 
+// Enhanced function to determine GMO status
 function determineGMOStatus(ingredient: OpenFoodFactsProduct['ingredients'][0]): { status: 'gmo-free' | 'likely-gmo' | 'contains-gmo'; confidence: number } {
+  // Vegan and vegetarian ingredients are more likely to be GMO-free
   if (ingredient.vegan && ingredient.vegetarian) {
     return { status: 'gmo-free', confidence: 85 };
   }
+  
+  // Check for common GMO ingredients
   const name = (ingredient.text || ingredient.id || '').toLowerCase();
   const commonGMOIngredients = [
     'corn', 'soy', 'soybean', 'canola', 'cottonseed', 
     'sugar beet', 'aspartame', 'flavoring', 'msg',
     'modified', 'starch', 'glucose', 'maltodextrin'
   ];
+  
   if (commonGMOIngredients.some(gmo => name.includes(gmo))) {
     return { status: 'likely-gmo', confidence: 70 };
   }
+  
+  // Default to uncertain with medium confidence
   return { status: 'likely-gmo', confidence: 50 };
 }
 
 function generateIngredientDetails(product: OpenFoodFactsProduct): IngredientDetail[] {
   if (!product.ingredients || product.ingredients.length === 0) {
+    // Create a placeholder ingredient if none exists
     return [{
       name: 'Ingredients information unavailable',
       riskLevel: 'caution',
@@ -181,6 +212,7 @@ function generateIngredientDetails(product: OpenFoodFactsProduct): IngredientDet
       gmoConfidence: 50
     }];
   }
+  
   return product.ingredients.map(ing => {
     const gmoInfo = determineGMOStatus(ing);
     return {
@@ -194,22 +226,44 @@ function generateIngredientDetails(product: OpenFoodFactsProduct): IngredientDet
   });
 }
 
+function calculateWaterFootprint(product: OpenFoodFactsProduct): number {
+  return product.ecoscore_data?.water_usage_score || 2.5;
+}
+
+function calculatePackagingScore(product: OpenFoodFactsProduct): number {
+  if (!product.packaging) return 3;
+  const packaging = product.packaging.toLowerCase();
+  if (packaging.includes('recycled')) return 4;
+  if (packaging.includes('plastic')) return 2;
+  return 3;
+}
+
 function buildAnalysisResult(product: OpenFoodFactsProduct, productCategory: keyof typeof TYPICAL_CO2_VALUES): AnalysisResult {
   const now = new Date();
+  
+  // Calculate scores using the calculation functions
   const environmentalScore = calculateEnvironmentalScore(product);
   const nutritionalScore = calculateNutritionalScore(product);
   const safetyScore = calculateSafetyScore(product);
+  
+  // Generate ingredient details
   const ingredients = generateIngredientDetails(product);
+  
+  // Generate concerns
   const concerns = generateConcerns(product);
+  
+  // Get nutriScore
   const nutriScoreMap: Record<string, 'A' | 'B' | 'C' | 'D' | 'E'> = {
     'a': 'A', 'b': 'B', 'c': 'C', 'd': 'D', 'e': 'E'
   };
   const nutriScore = nutriScoreMap[product.nutriscore_grade || 'c'] || 'C';
-  const carbonFootprint = product.carbon_footprint_per_100g || TYPICAL_CO2_VALUES[productCategory];
-  const waterFootprint = product.ecoscore_data?.water_usage_score || BASE_WATER_FOOTPRINT[productCategory];
-  const packagingScore = product.packaging?.toLowerCase().includes('recycled') ? 4 : 
-                        product.packaging?.toLowerCase().includes('plastic') ? 2 : 3;
   
+  // Calculate environmental data
+  const carbonFootprint = product.carbon_footprint_per_100g || TYPICAL_CO2_VALUES[productCategory];
+  const waterFootprint = calculateWaterFootprint(product) || BASE_WATER_FOOTPRINT[productCategory];
+  const packagingScore = calculatePackagingScore(product);
+  
+  // Check for GMO status in the whole product
   const productIsGMOFree = product.ingredients_analysis_tags?.includes('en:no-gmo') 
     || product.ingredients_analysis_tags?.includes('en:gmo-free') 
     || (ingredients.length > 0 && ingredients.every(ing => ing.gmoStatus === 'gmo-free'));
@@ -230,7 +284,7 @@ function buildAnalysisResult(product: OpenFoodFactsProduct, productCategory: key
       carbonFootprint,
       waterFootprint,
       packagingScore,
-      transportScore: 3,
+      transportScore: 3, // Default transport score
       methodology: 'Based on product category and packaging analysis'
     },
     nutritional: {
@@ -246,7 +300,7 @@ function buildAnalysisResult(product: OpenFoodFactsProduct, productCategory: key
   };
 }
 
-export default function FoodAnalysis({ barcode }: FoodAnalysisProps) {
+export function FoodAnalysis({ barcode }: FoodAnalysisProps) {
   const { data: product, isLoading, error } = useFoodProduct(barcode);
   const [analysis, setAnalysis] = useState<AnalysisResult | null>(null);
   const [imageError, setImageError] = useState(false);
@@ -256,7 +310,7 @@ export default function FoodAnalysis({ barcode }: FoodAnalysisProps) {
       const productCategory = estimateProductCategory(product);
       const result = buildAnalysisResult(product, productCategory);
       setAnalysis(result);
-      setImageError(false);
+      setImageError(false); // Reset image error state when new product is loaded
     }
   }, [product]);
 
@@ -301,6 +355,13 @@ export default function FoodAnalysis({ barcode }: FoodAnalysisProps) {
     return null;
   }
 
+  const getScoreColor = (score: number) => {
+    if (score >= 70) return 'text-green-600';
+    if (score >= 50) return 'text-yellow-600';
+    if (score >= 30) return 'text-orange-600';
+    return 'text-red-600';
+  };
+
   const getRiskColor = (riskLevel: string) => {
     switch (riskLevel) {
       case 'safe': return 'bg-green-100 text-green-800';
@@ -329,6 +390,13 @@ export default function FoodAnalysis({ barcode }: FoodAnalysisProps) {
     }
   };
 
+  const getEnvironmentalIcon = (score: number) => {
+    if (score >= 70) return <Leaf className="h-5 w-5 text-green-500" />;
+    if (score >= 50) return <Leaf className="h-5 w-5 text-yellow-500" />;
+    if (score >= 30) return <Factory className="h-5 w-5 text-orange-500" />;
+    return <Factory className="h-5 w-5 text-red-500" />;
+  };
+
   const getNutriScoreColor = (score: string) => {
     switch (score) {
       case 'A': return 'bg-green-500 text-white';
@@ -350,7 +418,10 @@ export default function FoodAnalysis({ barcode }: FoodAnalysisProps) {
                 src={analysis.productImage} 
                 alt={analysis.productName}
                 className="w-24 h-24 object-contain rounded-lg bg-white shadow-sm border-2 border-gray-100"
-                onError={() => setImageError(true)}
+                onError={(e) => {
+                  console.log("Image failed to load, using placeholder");
+                  setImageError(true);
+                }}
               />
             ) : (
               <div className="w-24 h-24 flex items-center justify-center rounded-lg bg-gray-100 border-2 border-gray-200">
@@ -393,6 +464,7 @@ export default function FoodAnalysis({ barcode }: FoodAnalysisProps) {
 
         {/* Score Breakdown */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {/* Environmental Score */}
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-lg flex items-center gap-2">
@@ -410,6 +482,7 @@ export default function FoodAnalysis({ barcode }: FoodAnalysisProps) {
             </CardContent>
           </Card>
 
+          {/* Nutritional Score */}
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-lg flex items-center gap-2">
@@ -435,6 +508,7 @@ export default function FoodAnalysis({ barcode }: FoodAnalysisProps) {
             </CardContent>
           </Card>
 
+          {/* Safety Score */}
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-lg flex items-center gap-2">

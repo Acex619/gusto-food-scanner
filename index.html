@@ -8,11 +8,30 @@
     <meta name="author" content="EcoFoodAI" />
     
     <!-- Security Headers -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self' https:; camera 'self';">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' 'unsafe-eval' https:; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; connect-src 'self' https: ws:; camera 'self';">
     <meta http-equiv="X-Frame-Options" content="DENY">
     <meta http-equiv="X-Content-Type-Options" content="nosniff">
     <meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin">
-    <meta http-equiv="Permissions-Policy" content="camera=(), microphone=(), geolocation=(), payment=()">
+    <meta http-equiv="Permissions-Policy" content="camera=*, microphone=(), geolocation=(), payment=()">
+    
+    <!-- Debug styles -->
+    <style>
+      #debug-mount {
+        display: none;
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        background: #f8d7da;
+        color: #721c24;
+        padding: 1rem;
+        font-family: monospace;
+        z-index: 9999;
+      }
+      .show-debug #debug-mount {
+        display: block;
+      }
+    </style>
 
     <meta property="og:title" content="eco-ai-food-lens" />
     <meta property="og:description" content="Lovable Generated Project" />
@@ -26,6 +45,27 @@
 
   <body>
     <div id="root"></div>
+    <div id="debug-mount"></div>
+    <script>
+      // Debug helper
+      window.debugMount = function(msg) {
+        const debug = document.getElementById('debug-mount');
+        if (debug) {
+          debug.textContent = msg;
+          document.body.classList.add('show-debug');
+        }
+      };
+      
+      // Check if the root element exists
+      if (!document.getElementById('root')) {
+        debugMount('Error: Root element not found!');
+      }
+
+      // Add error handling for script loading
+      window.addEventListener('error', function(event) {
+        debugMount('Script error: ' + event.message);
+      });
+    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
