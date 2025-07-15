@@ -28,7 +28,7 @@ const Index = () => {
               className="w-40 h-40 transition-transform hover:scale-110 duration-300 drop-shadow-lg"
             />
             {/* Title below logo - positioned as part of unified logo */}
-            <h1 className="text-6xl font-bold bg-gradient-to-r from-primary via-accent to-secondary bg-clip-text text-transparent leading-tight -mt-12">
+            <h1 className="text-6xl font-bold bg-gradient-to-r from-primary via-accent to-secondary bg-clip-text text-transparent leading-tight -mt-14">
               Gusto
             </h1>
           </div>
