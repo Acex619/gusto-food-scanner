@@ -7,9 +7,12 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "build:dev": "vite build --mode development",
+    "build:dev": "vite build --mode development", 
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "dev:powershell": "powershell.exe -ExecutionPolicy Bypass -Command \"vite\"",
+    "build:powershell": "powershell.exe -ExecutionPolicy Bypass -Command \"vite build\"",
+    "setup:powershell": "powershell.exe -ExecutionPolicy Bypass -File Fix-PowerShell-ExecutionPolicy.ps1"
   },
   "dependencies": {
     "@capacitor/android": "^7.4.2",

@@ -15,7 +15,7 @@ interface ScientificPaper {
 
 interface IngredientDetail {
   name: string;
-  riskLevel: 'safe' | 'caution' | 'moderate' | 'high';
+  riskLevel: 'safe' | 'caution' | 'unsafe';
   description: string;
   definition?: string; // New: Short definition from reliable sources
   concerns?: string[];
@@ -161,7 +161,7 @@ const getScientificSources = (ingredientName: string, riskLevel: string): Scient
       confidence: 90,
       peerReviewed: false
     });
-  } else if (riskLevel === 'caution' || riskLevel === 'moderate') {
+  } else if (riskLevel === 'caution') {
     defaultSources.push({
       title: 'Food Chemical Risk Assessment - Scientific Literature Review',
       url: 'https://pubmed.ncbi.nlm.nih.gov/',
@@ -176,7 +176,7 @@ const getScientificSources = (ingredientName: string, riskLevel: string): Scient
       confidence: 85,
       peerReviewed: false
     });
-  } else if (riskLevel === 'high') {
+  } else if (riskLevel === 'unsafe') {
     defaultSources.push({
       title: 'Toxicological Assessment of Food Additives - Research Database',
       url: 'https://pubmed.ncbi.nlm.nih.gov/',
@@ -210,25 +210,19 @@ export function IngredientInfoModal({ ingredient, isOpen, onClose }: IngredientI
         return { 
           color: 'bg-green-100 text-green-800 hover:bg-green-200', 
           icon: <CheckCircle className="h-4 w-4 mr-1" />,
-          label: 'Generally Safe'
+          label: 'Safe'
         };
       case 'caution':
         return { 
           color: 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200', 
           icon: <AlertCircle className="h-4 w-4 mr-1" />,
-          label: 'Use with Caution'
+          label: 'Caution'
         };
-      case 'moderate':
-        return { 
-          color: 'bg-orange-100 text-orange-800 hover:bg-orange-200', 
-          icon: <AlertTriangle className="h-4 w-4 mr-1" />,
-          label: 'Moderate Risk'
-        };
-      case 'high':
+      case 'unsafe':
         return { 
           color: 'bg-red-100 text-red-800 hover:bg-red-200', 
           icon: <XCircle className="h-4 w-4 mr-1" />,
-          label: 'High Risk'
+          label: 'Unsafe'
         };
       default:
         return { 
@@ -290,7 +284,7 @@ export function IngredientInfoModal({ ingredient, isOpen, onClose }: IngredientI
         
         <ScrollArea className="flex-1 pr-4">
           <div className="space-y-6 py-2">
-            {/* Definition */}
+            {/* Definition - First */}
             <div>
               <h3 className="text-sm font-medium mb-2 flex items-center gap-2">
                 <BookOpen className="h-4 w-4 text-primary" />
@@ -301,48 +295,39 @@ export function IngredientInfoModal({ ingredient, isOpen, onClose }: IngredientI
               </p>
             </div>
             
-            {/* Description */}
+            {/* Compact Labels Row */}
+            <div className="flex flex-wrap gap-2 items-center">
+              {/* GMO Status */}
+              {ingredient.gmoStatus && (
+                <Badge className={gmoBadge.color}>
+                  {gmoBadge.icon}
+                  {gmoBadge.label}
+                </Badge>
+              )}
+              
+              {/* Additional Properties in same row */}
+              {ingredient.sustainability && (
+                <Badge variant="outline" className="text-xs">
+                  Sustainability: {ingredient.sustainability}
+                </Badge>
+              )}
+              {ingredient.allergenicity && (
+                <Badge variant="outline" className="text-xs">
+                  Allergenicity: {ingredient.allergenicity}
+                </Badge>
+              )}
+              {ingredient.processing && (
+                <Badge variant="outline" className="text-xs">
+                  Processing: {ingredient.processing}
+                </Badge>
+              )}
+            </div>
+            
+            {/* Risk Assessment - Inside detailed info section */}
             <div>
               <h3 className="text-sm font-medium mb-2">Risk Assessment</h3>
               <p className="text-sm text-muted-foreground">{ingredient.description}</p>
             </div>
-            
-            {/* GMO Status */}
-            {ingredient.gmoStatus && (
-              <div className="mt-4">
-                <h3 className="text-sm font-medium mb-2">GMO Status</h3>
-                <div className="flex items-center gap-1.5">
-                  <Badge className={gmoBadge.color}>
-                    {gmoBadge.icon}
-                    {gmoBadge.label}
-                  </Badge>
-                </div>
-              </div>
-            )}
-            
-            {/* Additional Properties */}
-            {(ingredient.sustainability || ingredient.allergenicity || ingredient.processing) && (
-              <div className="mt-4">
-                <h3 className="text-sm font-medium mb-2">Additional Information</h3>
-                <div className="flex flex-wrap gap-2">
-                  {ingredient.sustainability && (
-                    <Badge variant="outline" className="text-xs">
-                      Sustainability: {ingredient.sustainability}
-                    </Badge>
-                  )}
-                  {ingredient.allergenicity && (
-                    <Badge variant="outline" className="text-xs">
-                      Allergenicity: {ingredient.allergenicity}
-                    </Badge>
-                  )}
-                  {ingredient.processing && (
-                    <Badge variant="outline" className="text-xs">
-                      Processing: {ingredient.processing}
-                    </Badge>
-                  )}
-                </div>
-              </div>
-            )}
             
             {/* Health Concerns */}
             {ingredient.concerns && ingredient.concerns.length > 0 && (

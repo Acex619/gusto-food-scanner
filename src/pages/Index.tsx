@@ -20,19 +20,17 @@ const Index = () => {
       <div className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="text-center mb-12 pt-8">
-          <div className="flex flex-col items-center justify-center gap-4 mb-6">
-            <div className="flex items-center justify-center gap-5">
-              <img 
-                src="/gusto-logo.svg" 
-                alt="Gusto Logo" 
-                className="w-28 h-28 transition-transform hover:scale-110 duration-300 drop-shadow-lg"
-              />
-              <div className="flex flex-col items-start">
-                <h1 className="text-6xl font-bold bg-gradient-to-r from-primary via-accent to-secondary bg-clip-text text-transparent leading-tight">
-                  Gusto
-                </h1>
-              </div>
-            </div>
+          <div className="flex flex-col items-center justify-center gap-0 mb-8">
+            {/* Logo above title */}
+            <img 
+              src="/gusto-logo.svg" 
+              alt="Gusto Logo" 
+              className="w-40 h-40 transition-transform hover:scale-110 duration-300 drop-shadow-lg"
+            />
+            {/* Title below logo - positioned as part of unified logo */}
+            <h1 className="text-6xl font-bold bg-gradient-to-r from-primary via-accent to-secondary bg-clip-text text-transparent leading-tight -mt-12">
+              Gusto
+            </h1>
           </div>
           <p className="text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
             An evidence-based food transparency tool providing comprehensive analysis of food products through barcode scanning, with detailed environmental impact and nutritional insights based on scientific research.

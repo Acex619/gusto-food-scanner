@@ -24,7 +24,7 @@ interface ScientificPaper {
 
 interface IngredientDetail {
   name: string;
-  riskLevel: 'safe' | 'caution' | 'moderate' | 'high';
+  riskLevel: 'safe' | 'caution' | 'unsafe';
   description: string;
   concerns?: string[];
   scientificPapers?: ScientificPaper[];
@@ -351,7 +351,7 @@ function generateConcerns(product: OpenFoodFactsProduct): string[] {
   return concerns;
 }
 
-function calculateIngredientRiskLevel(ingredient: OpenFoodFactsProduct['ingredients'][0]): 'safe' | 'caution' | 'moderate' | 'high' {
+function calculateIngredientRiskLevel(ingredient: OpenFoodFactsProduct['ingredients'][0]): 'safe' | 'caution' | 'unsafe' {
   const ingredientName = (ingredient.text || ingredient.id || '').toLowerCase();
   
   // Identify known concerning ingredients
@@ -368,11 +368,11 @@ function calculateIngredientRiskLevel(ingredient: OpenFoodFactsProduct['ingredie
   ];
   
   if (highRiskIngredients.some(risk => ingredientName.includes(risk))) {
-    return 'high';
+    return 'unsafe';
   }
   
   if (moderateRiskIngredients.some(risk => ingredientName.includes(risk))) {
-    return 'moderate';
+    return 'caution';
   }
   
   // Check based on additives
@@ -380,7 +380,7 @@ function calculateIngredientRiskLevel(ingredient: OpenFoodFactsProduct['ingredie
     const eNumber = ingredient.id.replace('en:E', '');
     // E numbers considered concerning (colors, preservatives, flavor enhancers)
     if (/^(102|104|110|120|122|124|129|150|151|155|180|21[0-9]|22[0-9]|23[0-9]|249|250|251|252|310|311|312|320|321|407|621|622|623|624|625)$/.test(eNumber)) {
-      return 'moderate';
+      return 'caution';
     }
   }
   
@@ -391,7 +391,7 @@ function calculateIngredientRiskLevel(ingredient: OpenFoodFactsProduct['ingredie
   
   // Default risk assessment based on other factors
   if (ingredient.from_palm_oil) {
-    return 'high'; // Palm oil has sustainability concerns
+    return 'unsafe'; // Palm oil has sustainability concerns
   }
   
   // Default to caution for ingredients without clear information
@@ -455,64 +455,154 @@ function determineGMOStatus(ingredient: OpenFoodFactsProduct['ingredients'][0]):
   return { status: 'likely-gmo', confidence: 50 };
 }
 
-// Use built-in curated definitions for reliable fallback
-function generateFallbackDescription(
-  ingredientName: string, 
-  processing: string, 
-  sustainability: string, 
-  allergenicity: string, 
-  gmoInfo: { status: string }
-): string {
-  const ingLower = ingredientName.toLowerCase();
+// Automated ingredient definition fetchers
+async function getWikipediaDefinition(ingredientName: string): Promise<string | null> {
+  try {
+    const searchQuery = ingredientName.replace(/\s+/g, '_');
+    const url = `https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(searchQuery)}`;
+    
+    const response = await fetch(url);
+    if (!response.ok) return null;
+    
+    const data = await response.json();
+    if (data.extract && data.extract.length > 50) {
+      // Clean up the extract and capitalize first letter
+      let definition = data.extract.replace(/\([^)]*\)/g, '').trim();
+      definition = definition.charAt(0).toUpperCase() + definition.slice(1);
+      
+      // Limit to reasonable length
+      if (definition.length > 300) {
+        definition = definition.substring(0, 300) + '...';
+      }
+      
+      return definition;
+    }
+    
+    return null;
+  } catch (error) {
+    console.log(`Failed to fetch Wikipedia definition for ${ingredientName}:`, error);
+    return null;
+  }
+}
+
+async function getFDADefinition(ingredientName: string): Promise<string | null> {
+  try {
+    // For common food additives, try FDA database patterns
+    const commonAdditives: Record<string, string> = {
+      'sodium benzoate': 'A preservative that inhibits the growth of potentially harmful bacteria, mold, and other microorganisms in food.',
+      'potassium sorbate': 'A chemical preservative commonly used in food and drinks to prevent mold.',
+      'citric acid': 'A natural preservative and flavor enhancer found in citrus fruits.',
+      'ascorbic acid': 'Also known as Vitamin C, used as a natural antioxidant and preservative.',
+      'calcium carbonate': 'A common food additive used as an anti-caking agent and nutritional supplement.',
+      'sodium chloride': 'Common table salt used for flavoring and preservation.',
+      'sugar': 'A sweet crystalline carbohydrate derived from sugar cane or sugar beet.',
+      'corn syrup': 'A sweetener made from corn starch, composed primarily of glucose.',
+      'high fructose corn syrup': 'A liquid sweetener made from corn starch that has been processed to convert glucose into fructose.',
+      'artificial flavor': 'Chemical compounds created to mimic natural flavors in food products.',
+      'natural flavor': 'Flavoring substances extracted from natural sources like fruits, vegetables, herbs, or spices.',
+      'lecithin': 'A natural emulsifier that helps mix oil and water-based ingredients.',
+      'carrageenan': 'A natural thickening agent extracted from red seaweed.',
+      'xanthan gum': 'A polysaccharide secreted by bacteria, used as a thickening and stabilizing agent.',
+      'guar gum': 'A natural thickening agent derived from guar beans.',
+      'cellulose': 'A natural fiber additive derived from plant cell walls, used as an anti-caking agent.',
+      'silicon dioxide': 'An anti-caking agent that prevents clumping in powdered foods.',
+      'mono and diglycerides': 'Emulsifiers that help mix oil and water-based ingredients.',
+      'polysorbate 80': 'An emulsifier and surfactant used in various food products.',
+      'sodium phosphate': 'A preservative and pH regulator used in processed foods.'
+    };
+    
+    const lowerName = ingredientName.toLowerCase();
+    for (const [key, definition] of Object.entries(commonAdditives)) {
+      if (lowerName.includes(key) || key.includes(lowerName)) {
+        return definition;
+      }
+    }
+    
+    return null;
+  } catch (error) {
+    console.log(`Failed to get FDA definition for ${ingredientName}:`, error);
+    return null;
+  }
+}
+
+async function getComprehensiveDefinition(ingredientName: string): Promise<string> {
+  // Try multiple sources in order of preference
   
-  let description = `${ingredientName} is `;
-  
-  // Add processing information
-  if (processing === 'high') {
-    description += 'a highly processed ingredient ';
-  } else if (processing === 'moderate') {
-    description += 'a moderately processed ingredient ';
-  } else if (processing === 'minimal') {
-    description += 'a minimally processed ingredient ';
+  // 1. Try Wikipedia for comprehensive definitions
+  let definition = await getWikipediaDefinition(ingredientName);
+  if (definition && definition.length > 100) {
+    return definition;
   }
   
-  // Add sustainability information
-  if (sustainability === 'low') {
-    description += 'with significant environmental impact. ';
-  } else if (sustainability === 'medium') {
-    description += 'with moderate environmental impact. ';
-  } else if (sustainability === 'high') {
-    description += 'with low environmental impact. ';
+  // 2. Try FDA/common additives database
+  definition = await getFDADefinition(ingredientName);
+  if (definition) {
+    return definition;
   }
   
-  // Add allergenicity information
-  if (allergenicity === 'high') {
-    description += 'It is a common allergen. ';
+  // 3. Try alternative Wikipedia searches for common variations
+  const variations = [
+    ingredientName.replace(/\s*\([^)]*\)/g, ''), // Remove parentheses
+    ingredientName.split(' ')[0], // First word only
+    ingredientName.replace(/,.*/, ''), // Remove everything after comma
+  ];
+  
+  for (const variation of variations) {
+    if (variation !== ingredientName && variation.length > 2) {
+      definition = await getWikipediaDefinition(variation);
+      if (definition && definition.length > 100) {
+        return definition;
+      }
+    }
   }
   
-  // Add GMO information
-  if (gmoInfo.status === 'likely-gmo') {
-    description += 'This ingredient may be derived from GMO sources. ';
-  } else if (gmoInfo.status === 'contains-gmo') {
-    description += 'This ingredient typically contains genetically modified organisms. ';
-  } else if (gmoInfo.status === 'gmo-free') {
-    description += 'This ingredient is typically GMO-free. ';
+  // 4. Fallback to enhanced generic definitions
+  return generateEnhancedFallbackDefinition(ingredientName);
+}
+
+function generateEnhancedFallbackDefinition(ingredientName: string): string {
+  const name = ingredientName.toLowerCase();
+  const capitalizedName = ingredientName.charAt(0).toUpperCase() + ingredientName.slice(1);
+  
+  // Enhanced category-based definitions
+  if (name.includes('preservative') || name.includes('sodium benzoate') || name.includes('potassium sorbate')) {
+    return `${capitalizedName} is a food preservative that helps prevent spoilage by inhibiting the growth of bacteria, mold, and yeast, thereby extending the shelf life of food products.`;
   }
   
-  // Add common use information based on ingredient name
-  if (ingLower.includes('sweetener') || ingLower.includes('sugar') || ingLower.includes('syrup')) {
-    description += 'It is used as a sweetening agent in foods. ';
-  } else if (ingLower.includes('preservative') || ingLower.includes('stabilizer')) {
-    description += 'It is used to extend shelf life and stabilize food products. ';
-  } else if (ingLower.includes('color') || ingLower.includes('dye')) {
-    description += 'It is used to enhance or modify food color. ';
-  } else if (ingLower.includes('flavor')) {
-    description += 'It is used to enhance or modify food flavor. ';
-  } else if (ingLower.includes('emulsifier')) {
-    description += 'It is used to mix ingredients that would normally separate. ';
+  if (name.includes('emulsifier') || name.includes('lecithin') || name.includes('mono') || name.includes('diglyceride')) {
+    return `${capitalizedName} is an emulsifying agent that helps blend oil and water-based ingredients that would normally separate, creating smooth and stable food textures.`;
   }
   
-  return description;
+  if (name.includes('thickener') || name.includes('gum') || name.includes('starch') || name.includes('cellulose')) {
+    return `${capitalizedName} is a thickening agent used to increase viscosity and improve the texture and mouthfeel of food products.`;
+  }
+  
+  if (name.includes('sweetener') || name.includes('sugar') || name.includes('syrup') || name.includes('fructose')) {
+    return `${capitalizedName} is a sweetening agent used to add sweetness to food products and enhance flavor profiles.`;
+  }
+  
+  if (name.includes('color') || name.includes('dye') || name.includes('pigment')) {
+    return `${capitalizedName} is a coloring agent used to enhance or modify the visual appearance of food products.`;
+  }
+  
+  if (name.includes('flavor') || name.includes('aroma') || name.includes('essence')) {
+    return `${capitalizedName} is a flavoring agent used to enhance or modify the taste and aroma characteristics of food products.`;
+  }
+  
+  if (name.includes('acid') || name.includes('citric') || name.includes('ascorbic')) {
+    return `${capitalizedName} is an acidifying agent and antioxidant used to regulate pH levels and prevent oxidation in food products.`;
+  }
+  
+  if (name.includes('vitamin') || name.includes('mineral') || name.includes('iron') || name.includes('calcium')) {
+    return `${capitalizedName} is a nutritional additive used to fortify foods with essential vitamins and minerals for improved nutritional value.`;
+  }
+  
+  if (name.includes('oil') || name.includes('fat')) {
+    return `${capitalizedName} is a lipid ingredient used to provide texture, flavor, and nutritional content in food formulations.`;
+  }
+  
+  // Default enhanced definition
+  return `${capitalizedName} is a food ingredient with specific functional properties used in food processing and formulation.`;
 }
 
 async function generateIngredientDetails(product: OpenFoodFactsProduct): Promise<IngredientDetail[]> {
@@ -551,8 +641,10 @@ async function generateIngredientDetails(product: OpenFoodFactsProduct): Promise
 
   const ingredientPromises = filteredIngredients.map(async (ing) => {
     const gmoInfo = determineGMOStatus(ing);
-    const ingredientName = ing.text || ing.id || 'Unknown ingredient';
-    const ingLower = ingredientName.toLowerCase();
+    const rawIngredientName = ing.text || ing.id || 'Unknown ingredient';
+    // Capitalize first letter of ingredient name
+    const ingredientName = rawIngredientName.charAt(0).toUpperCase() + rawIngredientName.slice(1);
+    const ingLower = rawIngredientName.toLowerCase();
     
     // Convert scientific references to our format if available
     const scientificPapers = ing.scientific_references?.map(ref => ({
@@ -620,10 +712,6 @@ async function generateIngredientDetails(product: OpenFoodFactsProduct): Promise
     }
     
     // Check if any additional concerns need to be added based on our assessment
-    if (processing === 'high' && !concerns.some(c => c.includes('highly processed'))) {
-      concerns.push('Highly processed ingredient');
-    }
-    
     if (allergenicity === 'high' && !concerns.some(c => c.includes('allergen'))) {
       concerns.push('Common allergen');
     }
@@ -631,14 +719,8 @@ async function generateIngredientDetails(product: OpenFoodFactsProduct): Promise
     // Generate a proper description if one doesn't exist
     let description = ing.description;
     if (!description || description.trim() === '') {
-      // Try to get Google AI Overview definition first
-      const aiDefinition = await getGoogleAIOverviewDefinition(ingredientName);
-      if (aiDefinition) {
-        description = aiDefinition;
-      } else {
-        // Fallback to generated description
-        description = generateFallbackDescription(ingredientName, processing, sustainability, allergenicity, gmoInfo);
-      }
+      // Try to get comprehensive definition from multiple reliable sources
+      description = await getComprehensiveDefinition(ingredientName);
     }
     
     return {
@@ -919,44 +1001,6 @@ async function getGoogleAIOverviewDefinition(ingredientName: string): Promise<st
     return null;
   } catch (error) {
     console.error('Error fetching ingredient definition:', error);
-    return null;
-  }
-}
-
-// Wikipedia web scraping for ingredient definitions using fetch_webpage tool
-async function getWikipediaDefinition(ingredientName: string): Promise<string | null> {
-  try {
-    // Try multiple Wikipedia URL patterns
-    const searchTerms = [
-      ingredientName,
-      `${ingredientName} food additive`,
-      `${ingredientName} ingredient`,
-      `${ingredientName} chemical compound`
-    ];
-    
-    for (const searchTerm of searchTerms) {
-      const wikipediaUrl = `https://en.wikipedia.org/wiki/${encodeURIComponent(searchTerm.replace(/\s+/g, '_'))}`;
-      
-      try {
-        // Since we can't directly use fetch_webpage in production, we'll simulate the response
-        // In a real implementation, you would make an API call to your backend which uses fetch_webpage
-        const mockResponse = await getMockWikipediaResponse(searchTerm);
-        
-        if (mockResponse) {
-          const definition = extractWikipediaText(mockResponse, ingredientName);
-          if (definition) {
-            return definition;
-          }
-        }
-      } catch (error) {
-        console.log(`Wikipedia fetch failed for ${searchTerm}:`, error);
-        continue;
-      }
-    }
-    
-    return null;
-  } catch (error) {
-    console.error('Wikipedia scraping error:', error);
     return null;
   }
 }
@@ -1407,8 +1451,7 @@ export function FoodAnalysis({ barcode }: FoodAnalysisProps) {
     switch (riskLevel) {
       case 'safe': return 'bg-green-100 text-green-800';
       case 'caution': return 'bg-yellow-100 text-yellow-800';
-      case 'moderate': return 'bg-orange-100 text-orange-800';
-      case 'high': return 'bg-red-100 text-red-800';
+      case 'unsafe': return 'bg-red-100 text-red-800';
       default: return 'bg-gray-100 text-gray-800';
     }
   };
