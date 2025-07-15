@@ -4,6 +4,7 @@ import path from "path";
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
+  base: '/gusto-food-scanner/',
   server: {
     host: "::",
     port: 8080,
@@ -14,10 +15,15 @@ export default defineConfig(({ mode }) => ({
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
+      "react": "react",
     },
   },
   define: {
     global: 'globalThis',
+    'process.env': {}
+  },
+  optimizeDeps: {
+    include: ['react', 'react-dom']
   },
   build: {
     chunkSizeWarningLimit: 1000, // Increase warning limit to 1000kb

@@ -1,12 +1,19 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import * as React from 'react'
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { QueryClientProvider } from '@tanstack/react-query'
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
 import { queryClient } from '@/lib/queryClient'
-import '@/lib/react-polyfill' // Import polyfill first
 import App from './App.tsx'
 import './index.css'
+
+// IMMEDIATE React global assignment - must happen before any component imports
+(window as any).React = React;
+(globalThis as any).React = React;
+if (typeof global !== 'undefined') {
+  (global as any).React = React;
+}
 
 // Ensure React is available globally for all components
 declare global {

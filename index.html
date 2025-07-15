@@ -18,9 +18,25 @@
     
     <!-- Initialize React globals -->
     <script>
+      // Prevent React createContext errors by ensuring React exists globally
       window.React = window.React || {};
       if (typeof globalThis !== 'undefined') {
         globalThis.React = globalThis.React || {};
+      }
+      if (typeof global !== 'undefined') {
+        global.React = global.React || {};
+      }
+      
+      // Create a temporary createContext function to prevent errors
+      if (!window.React.createContext) {
+        window.React.createContext = function(defaultValue) {
+          console.warn('Temporary React.createContext used - waiting for React to load');
+          return {
+            Provider: function(props) { return props.children; },
+            Consumer: function(props) { return props.children(defaultValue); },
+            displayName: 'TempContext'
+          };
+        };
       }
     </script>
     
