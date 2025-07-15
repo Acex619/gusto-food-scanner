@@ -16,6 +16,9 @@ export default defineConfig(({ mode }) => ({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  define: {
+    global: 'globalThis',
+  },
   build: {
     chunkSizeWarningLimit: 1000, // Increase warning limit to 1000kb
     rollupOptions: {

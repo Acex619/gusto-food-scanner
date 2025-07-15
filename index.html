@@ -16,6 +16,14 @@
     <meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin">
     <meta http-equiv="Permissions-Policy" content="camera=*, microphone=(), geolocation=(), payment=()">
     
+    <!-- Initialize React globals -->
+    <script>
+      window.React = window.React || {};
+      if (typeof globalThis !== 'undefined') {
+        globalThis.React = globalThis.React || {};
+      }
+    </script>
+    
     <!-- Debug styles -->
     <style>
       #debug-mount {

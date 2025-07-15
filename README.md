@@ -4,6 +4,12 @@ Gusto Food Scanner is a modern, science-driven mobile application that empowers 
 
 ![Gusto Logo](public/gusto-logo.svg)
 
+## 🚀 Live Demo
+
+**Try it now:** [https://gusto-food-scanner.vercel.app](https://gusto-food-scanner.vercel.app)
+
+*Note: Use your mobile device for the best barcode scanning experience!*
+
 ## ✨ Features
 
 - 🍎 **Smart Barcode Scanning**: Advanced image processing for reliable product recognition
