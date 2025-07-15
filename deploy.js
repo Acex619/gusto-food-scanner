@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 
 /**
- * GreenTrace Deployment Script
- * This script helps you deploy the GreenTrace app to various platforms
+ * Gusto Food Scanner Deployment Script
+ * This script helps you deploy the Gusto Food Scanner app to various platforms
  */
 
 const { execSync } = require('child_process');
@@ -15,12 +15,12 @@ const rl = readline.createInterface({
   output: process.stdout
 });
 
-console.log('\n🌱 GreenTrace Deployment Helper 🌱\n');
+console.log('\n� Gusto Food Scanner Deployment Helper �\n');
 
 const question = (query) => new Promise(resolve => rl.question(query, resolve));
 
 async function main() {
-  console.log('This script will help you deploy GreenTrace online for 24/7 free testing.');
+  console.log('This script will help you deploy Gusto Food Scanner online for 24/7 free testing.');
   
   const platform = await question(
     '\nWhere would you like to deploy?\n' +
@@ -44,7 +44,7 @@ async function main() {
     case '1': {
       console.log('🚀 Deploying to Vercel...');
       
-      const projectName = await question('Enter a unique project name (e.g., greentrace-food-scanner): ');
+      const projectName = await question('Enter a unique project name (e.g., gusto-food-scanner): ');
       
       try {
         // Check if vercel CLI is installed

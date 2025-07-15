@@ -7,7 +7,7 @@ export const openFoodFactsApi = axios.create({
   baseURL: 'https://world.openfoodfacts.org/api/v2',
   timeout: 10000,
   headers: {
-    'User-Agent': 'GreenTrace - https://github.com/Acex619/eco-ai-food-lens'
+    'User-Agent': 'Gusto - https://github.com/Acex619/eco-ai-food-lens'
   }
 });
 
@@ -16,7 +16,7 @@ export const usdaApi = axios.create({
   baseURL: 'https://api.nal.usda.gov/fdc/v1',
   timeout: 10000,
   headers: {
-    'User-Agent': 'GreenTrace - https://github.com/Acex619/eco-ai-food-lens'
+    'User-Agent': 'Gusto - https://github.com/Acex619/eco-ai-food-lens'
   }
 });
 
@@ -25,7 +25,7 @@ export const efsaApi = axios.create({
   baseURL: 'https://data.efsa.europa.eu/api/v1',
   timeout: 10000,
   headers: {
-    'User-Agent': 'GreenTrace - https://github.com/Acex619/eco-ai-food-lens'
+    'User-Agent': 'Gusto - https://github.com/Acex619/eco-ai-food-lens'
   }
 });
 
@@ -92,13 +92,17 @@ const enrichWithScientificData = async (
           url: 'https://www.sciencedirect.com/science/article/abs/pii/S0959652618330221',
           source: 'PubMed' as const,
           publicationYear: 2019,
-          abstract: 'Analysis of environmental impacts of palm oil production including deforestation and biodiversity loss'
+          abstract: 'Analysis of environmental impacts of palm oil production including deforestation and biodiversity loss',
+          confidenceScore: 0.9,
+          peerReviewed: true
         },
         {
           title: 'Palm oil and health risks',
           url: 'https://www.efsa.europa.eu/en/topics/topic/palm-oil',
           source: 'EFSA' as const,
-          publicationYear: 2022
+          publicationYear: 2022,
+          confidenceScore: 0.8,
+          peerReviewed: true
         }
       ]
     },
@@ -108,23 +112,35 @@ const enrichWithScientificData = async (
           title: 'Safety evaluation of aspartame',
           url: 'https://www.efsa.europa.eu/en/topics/topic/aspartame',
           source: 'EFSA' as const,
-          publicationYear: 2020
+          publicationYear: 2020,
+          confidenceScore: 0.85,
+          peerReviewed: true
         },
         {
           title: 'FDA approved aspartame safety',
           url: 'https://www.fda.gov/food/food-additives-petitions/aspartame-use-food',
           source: 'FDA' as const,
-          publicationYear: 2021
+          publicationYear: 2021,
+          confidenceScore: 0.8,
+          peerReviewed: true
         }
       ]
     }
   };
-  
+
   // Default to empty references if nothing found
+  const found = Object.entries(commonIngredients).find(
+    ([key]) => ingredient.toLowerCase().includes(key)
+  )?.[1]?.references;
+
   return {
-    references: Object.entries(commonIngredients).find(
-      ([key]) => ingredient.toLowerCase().includes(key)
-    )?.[1]?.references || []
+    references: found
+      ? found.map(ref => ({
+          ...ref,
+          confidenceScore: ref.confidenceScore ?? 0.8,
+          peerReviewed: ref.peerReviewed ?? true
+        }))
+      : []
   };
 };
 
@@ -139,6 +155,7 @@ const getEnvironmentalImpactData = async (
       waterUsage: 628,
       waterSource: 'Agribalyse',
       landUse: 12.4,
+      landUseScore: 5,
       deforestationRisk: 'Low',
       biodiversityImpact: 4.2,
       transportEmissions: 0.3,
@@ -150,6 +167,7 @@ const getEnvironmentalImpactData = async (
       waterUsage: 15415,
       waterSource: 'Ecoinvent',
       landUse: 326.2,
+      landUseScore: 9,
       deforestationRisk: 'High',
       biodiversityImpact: 8.7,
       transportEmissions: 0.5,
@@ -161,6 +179,7 @@ const getEnvironmentalImpactData = async (
       waterUsage: 322,
       waterSource: 'Agribalyse',
       landUse: 0.3,
+      landUseScore: 2,
       deforestationRisk: 'None',
       biodiversityImpact: 1.2,
       transportEmissions: 0.8,
@@ -177,7 +196,15 @@ const getEnvironmentalImpactData = async (
   return matchedCategory 
     ? environmentalData[matchedCategory] 
     : { 
+        carbonFootprintScore: 0,
+        waterUsage: 0,
         waterSource: 'Estimated',
+        landUse: 0,
+        landUseScore: 0,
+        deforestationRisk: 'Low',
+        biodiversityImpact: 0,
+        transportEmissions: 0,
+        packagingWaste: 0,
         dataReliability: 40
       };
 };
@@ -242,7 +269,7 @@ export const getFoodProduct = async (barcode: string): Promise<OpenFoodFactsProd
             const scientificData = await enrichWithScientificData(ingredientText);
             return {
               ...ingredient,
-              scientific_references: scientificData.references,
+              scientific_references: scientificData.references as import('@/types/food').ScientificReference[],
               health_concerns: ingredient.from_palm_oil 
                 ? ['Environmental impact', 'Potential health risks'] 
                 : undefined
@@ -460,3 +487,19 @@ export const useMultiSourceFoodProduct = (barcode: string) => {
     gcTime: 1000 * 60 * 60 * 24, // 24 hours
   });
 };
+
+// Interface moved to @/types/food.ts
+
+// If the Ingredient type doesn't exist, you need to define it:
+export interface Ingredient {
+  id: string;
+  name: string;
+  // Add other properties that an ingredient should have
+  percentage?: number;
+  vegetarian?: boolean;
+  vegan?: boolean;
+  allergen?: boolean;
+  organic?: boolean;
+  hasGMO?: boolean;
+  // Add any other relevant properties
+}

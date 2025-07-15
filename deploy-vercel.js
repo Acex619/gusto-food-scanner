@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 
 /**
- * GreenLens Vercel Deployment Script
- * This script helps you deploy the GreenLens app to Vercel with a custom name
+ * Gusto Food Scanner Vercel Deployment Script
+ * This script helps you deploy the Gusto Food Scanner app to Vercel with a custom name
  */
 
 const { execSync } = require('child_process');
@@ -13,17 +13,17 @@ const rl = readline.createInterface({
   output: process.stdout
 });
 
-console.log('\n🌱 GreenLens Vercel Deployment Helper 🌱\n');
+console.log('\n� Gusto Food Scanner Vercel Deployment Helper �\n');
 
 const question = (query) => new Promise(resolve => rl.question(query, resolve));
 
 async function main() {
-  console.log('This script will deploy GreenLens to Vercel with a custom name.');
+  console.log('This script will deploy Gusto Food Scanner to Vercel with a custom name.');
   
   // Suggest some unique names
   console.log('\nSuggested project names:');
   console.log('- food-lens-scanner');
-  console.log('- greenlens-app');
+  console.log('- gusto-food-scanner');
   console.log('- eco-food-scanner');
   console.log('- food-transparency');
   

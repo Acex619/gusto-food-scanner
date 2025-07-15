@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { BarcodeScanner } from '@/components/BarcodeScanner';
 import { FoodAnalysis } from '@/components/FoodAnalysis';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Sparkles, Leaf, Star } from 'lucide-react';
+import { ArrowLeft, Sparkles, Leaf, Star, Shield, BarChart } from 'lucide-react';
 
 const Index = () => {
   const [scannedBarcode, setScannedBarcode] = useState<string | null>(null);
@@ -20,16 +20,22 @@ const Index = () => {
       <div className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="text-center mb-12 pt-8">
-          <div className="flex items-center justify-center gap-3 mb-6">
-            <div className="p-2 rounded-xl bg-primary text-primary-foreground">
-              <Sparkles className="h-8 w-8" />
+          <div className="flex flex-col items-center justify-center gap-4 mb-6">
+            <div className="flex items-center justify-center gap-5">
+              <img 
+                src="/gusto-logo.svg" 
+                alt="Gusto Logo" 
+                className="w-28 h-28 transition-transform hover:scale-110 duration-300 drop-shadow-lg"
+              />
+              <div className="flex flex-col items-start">
+                <h1 className="text-6xl font-bold bg-gradient-to-r from-primary via-accent to-secondary bg-clip-text text-transparent leading-tight">
+                  Gusto
+                </h1>
+              </div>
             </div>
-            <h1 className="text-5xl font-bold bg-gradient-to-r from-primary via-accent to-secondary bg-clip-text text-transparent">
-              GreenTrace
-            </h1>
           </div>
           <p className="text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
-            An evidence-based food transparency tool providing comprehensive analysis of food products through barcode and QR code scanning, with detailed environmental impact and nutritional insights.
+            An evidence-based food transparency tool providing comprehensive analysis of food products through barcode scanning, with detailed environmental impact and nutritional insights based on scientific research.
           </p>
           <div className="flex justify-center gap-6 mt-6 text-sm text-muted-foreground">
             <div className="flex items-center gap-2">
@@ -46,7 +52,6 @@ const Index = () => {
             </div>
           </div>
         </div>
-
         {/* Content */}
         <div className="space-y-8">
           {!scannedBarcode ? (
@@ -54,7 +59,7 @@ const Index = () => {
               <BarcodeScanner onScanResult={handleScanResult} />
               
               <div className="text-center max-w-2xl">
-                <h2 className="text-2xl font-bold mb-6 text-foreground">How GreenTrace Works</h2>
+                <h2 className="text-2xl font-bold mb-6 text-foreground">How Gusto Works</h2>
                 <div className="grid md:grid-cols-2 gap-6 text-left">
                   <div className="bg-card rounded-xl p-6 border shadow-sm">
                     <div className="flex items-center gap-3 mb-3">
@@ -88,7 +93,7 @@ const Index = () => {
                       <h3 className="font-semibold">Sustainability Focus</h3>
                     </div>
                     <p className="text-sm text-muted-foreground">
-                      Calculate carbon footprint, water usage, and packaging impact using industry-standard LCA methodologies
+                      Calculate carbon footprint, water usage, land use, biodiversity impact, and packaging sustainability using industry-standard LCA methodologies
                     </p>
                   </div>
                   
@@ -97,10 +102,10 @@ const Index = () => {
                       <div className="p-2 rounded-lg bg-primary/10">
                         <ArrowLeft className="h-5 w-5 text-primary" />
                       </div>
-                      <h3 className="font-semibold">Multi-Format Scanning</h3>
+                      <h3 className="font-semibold">Advanced Barcode Scanning</h3>
                     </div>
                     <p className="text-sm text-muted-foreground">
-                      Support for both standard barcodes and QR codes, covering products from European and American markets
+                      High-precision barcode recognition with adaptive image processing, covering products from European and American markets
                     </p>
                   </div>
                 </div>
@@ -108,7 +113,12 @@ const Index = () => {
             </div>
           ) : (
             <div className="space-y-6">
-              <div className="flex justify-center">
+              <div className="flex justify-center items-center gap-4">
+                <img 
+                  src="/gusto-logo.svg" 
+                  alt="Gusto Logo" 
+                  className="w-8 h-8"
+                />
                 <Button 
                   onClick={resetScan}
                   variant="outline" 
@@ -129,13 +139,17 @@ const Index = () => {
         <div className="text-center mt-16 pb-8">
           <div className="max-w-2xl mx-auto">
             <p className="text-sm text-muted-foreground mb-4">
-              GreenTrace combines trusted scientific data sources with standardized environmental metrics to empower sustainable food choices.
+              Gusto Food Scanner combines trusted scientific data sources with standardized environmental metrics to empower sustainable food choices.
             </p>
-            <div className="flex justify-center gap-8 text-xs text-muted-foreground">
+            <div className="flex flex-wrap justify-center gap-4 text-xs text-muted-foreground">
               <span>🔬 Scientific Evidence</span>
               <span>🌱 Environmental Impact</span>
+              <span>💧 Water Footprint</span>
+              <span>🌲 Deforestation Risk</span>
+              <span>🌍 Biodiversity Impact</span>
+              <span>📦 Packaging Assessment</span>
               <span>🧬 GMO Detection</span>
-              <span>📊 Trust Score</span>
+              <span>ℹ️ Ingredient Definitions</span>
             </div>
             <p className="text-xs text-muted-foreground mt-4">
               For educational and informational purposes. Consult healthcare professionals for dietary advice.

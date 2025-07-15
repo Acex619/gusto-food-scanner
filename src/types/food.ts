@@ -1,4 +1,6 @@
 export interface ScientificReference {
+  confidenceScore: number;
+  peerReviewed: boolean;
   title: string;
   url: string;
   source: 'EFSA' | 'FDA' | 'PubMed' | 'USDA' | 'FSA' | 'OTHER';
@@ -17,6 +19,7 @@ export interface MarketData {
 }
 
 export interface EnvironmentalData {
+  landUseScore: number;
   carbonFootprintScore?: number; // Standardized to Agribalyse methodology
   waterUsage?: number; // Liters per kg
   waterSource?: 'Agribalyse' | 'Ecoinvent' | 'GHG Protocol' | 'Estimated';
@@ -30,6 +33,10 @@ export interface EnvironmentalData {
 }
 
 export interface OpenFoodFactsProduct {
+  nova_group: any;
+  labels_tags: any;
+  origins_tags: any;
+  data_quality_warnings_tags: any;
   // Basic product information
   code: string;
   product_name?: string;
@@ -74,6 +81,9 @@ export interface OpenFoodFactsProduct {
   
   // Ingredients and safety data
   ingredients?: Array<{
+    organic: boolean;
+    labels_tags: any;
+    allergens: boolean;
     text?: string;
     id?: string;
     description?: string;

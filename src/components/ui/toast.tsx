@@ -114,6 +114,20 @@ type ToastProps = React.ComponentPropsWithoutRef<typeof Toast>
 
 type ToastActionElement = React.ReactElement<typeof ToastAction>
 
+// Create a Toaster component that can be directly imported in App.tsx
+function Toaster() {
+  const [toasts, setToasts] = React.useState<ToastProps[]>([])
+
+  return (
+    <ToastProvider>
+      {toasts.map((toast) => (
+        <Toast key={toast.id} {...toast} />
+      ))}
+      <ToastViewport />
+    </ToastProvider>
+  )
+}
+
 export {
   type ToastProps,
   type ToastActionElement,
@@ -124,4 +138,5 @@ export {
   ToastDescription,
   ToastClose,
   ToastAction,
+  Toaster,
 }

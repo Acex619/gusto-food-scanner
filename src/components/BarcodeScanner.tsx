@@ -75,20 +75,16 @@ export function BarcodeScanner({ onScanResult }: BarcodeScannerProps) {
     // Configure ZXing reader with advanced options
     const hints = new Map();
     const formats = [
-      // Standard product barcodes
-      BarcodeFormat.EAN_13,
-      BarcodeFormat.EAN_8,
-      BarcodeFormat.UPC_A,
-      BarcodeFormat.UPC_E,
-      BarcodeFormat.CODE_128,
-      BarcodeFormat.CODE_39,
-      // QR code format
-      BarcodeFormat.QR_CODE,
-      // Additional formats for better coverage
-      BarcodeFormat.DATA_MATRIX,
-      BarcodeFormat.AZTEC,
-      BarcodeFormat.ITF,  // Added Interleaved 2 of 5
-      BarcodeFormat.CODABAR // Added CODABAR
+      // Standard product barcodes - focused only on food product barcodes
+      BarcodeFormat.EAN_13, // Primary format for retail food products
+      BarcodeFormat.EAN_8,  // Compact retail format
+      BarcodeFormat.UPC_A,  // North American standard
+      BarcodeFormat.UPC_E,  // Compressed UPC format
+      BarcodeFormat.CODE_128, // Variable length format for additional product data
+      BarcodeFormat.CODE_39,  // For some older or specialized food products
+      // Additional formats for better coverage of food products
+      BarcodeFormat.ITF,     // Interleaved 2 of 5, used for some bulk packaging
+      BarcodeFormat.CODABAR   // Used in some inventory systems
     ];
     hints.set(DecodeHintType.POSSIBLE_FORMATS, formats);
     // Improve accuracy with advanced configuration
@@ -135,7 +131,7 @@ export function BarcodeScanner({ onScanResult }: BarcodeScannerProps) {
     }
   };
   
-  // Helper function to enhance image for better barcode recognition
+  // Enhanced image processing for better barcode recognition
   const enhanceImageForBarcodeScan = async (dataUrl: string): Promise<string> => {
     return new Promise((resolve) => {
       const img = document.createElement('img');
@@ -158,13 +154,26 @@ export function BarcodeScanner({ onScanResult }: BarcodeScannerProps) {
         const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
         const data = imageData.data;
         
-        // Apply contrast enhancement and noise reduction
+        // First pass: Analyze image to determine if it needs brightness adjustment
+        let totalBrightness = 0;
         for (let i = 0; i < data.length; i += 4) {
-          // Convert to grayscale for barcode optimization
+          totalBrightness += (data[i] + data[i + 1] + data[i + 2]) / 3;
+        }
+        const avgBrightness = totalBrightness / (data.length / 4);
+        
+        // Second pass: Apply appropriate enhancements based on image analysis
+        for (let i = 0; i < data.length; i += 4) {
+          // Convert to grayscale with improved weights for barcode visibility
           const gray = 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
           
-          // Apply adaptive thresholding
-          const threshold = 120;
+          // Apply adaptive thresholding with brightness compensation
+          let threshold = 120;
+          
+          // Adjust threshold based on average brightness
+          if (avgBrightness < 100) threshold = 90;  // Lower threshold for dark images
+          else if (avgBrightness > 200) threshold = 160; // Higher threshold for bright images
+          
+          // Apply local contrast enhancement for better barcode edge detection
           const value = gray < threshold ? 0 : 255;
           
           // Set pixel values
@@ -384,9 +393,13 @@ export function BarcodeScanner({ onScanResult }: BarcodeScannerProps) {
   return (
     <Card className="w-full max-w-md mx-auto shadow-lg border-0 bg-gradient-to-br from-background to-muted/20">
       <CardHeader className="text-center pb-4">
-        <CardTitle className="flex items-center justify-center gap-2 text-xl">
-          <Leaf className="h-6 w-6 text-primary" />
-          GreenLens Scanner
+        <CardTitle className="flex items-center justify-center gap-3 text-xl">
+          <img 
+            src="/gusto-logo.svg" 
+            alt="Gusto Logo" 
+            className="w-8 h-8"
+          />
+          Gusto Scanner
         </CardTitle>
         <p className="text-sm text-muted-foreground">
           Scan products for instant evidence-based insights
