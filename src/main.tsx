@@ -4,6 +4,7 @@ import { createRoot } from 'react-dom/client'
 import { QueryClientProvider } from '@tanstack/react-query'
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
 import { queryClient } from '@/lib/queryClient'
+import '@/lib/react-polyfill' // Import polyfill first
 import App from './App.tsx'
 import './index.css'
 
