@@ -2,7 +2,7 @@
   "name": "gusto-food-scanner",
   "private": true,
   "version": "1.0.0",
-  "description": "Evidence-based food transparency scanner for nutrition, safety, and environmental impact analysis",
+  "description": "Evidence-based food transparency tool providing comprehensive analysis of food products through barcode scanning",
   "type": "module",
   "scripts": {
     "dev": "vite",

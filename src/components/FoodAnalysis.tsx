@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Button } from '@/components/ui/button';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { AlertTriangle, Leaf, Shield, Star, ChevronDown, ExternalLink, Droplets, Factory, AlertCircle, CheckCircle, XCircle, Recycle, TrendingUp, ShoppingBag } from 'lucide-react';
+import { AlertTriangle, Leaf, Shield, Star, ChevronDown, ExternalLink, Droplets, Factory, AlertCircle, CheckCircle, XCircle, Recycle, TrendingUp, ShoppingBag, Beaker } from 'lucide-react';
 import { IngredientInfoModal } from '@/components/ui/ingredient-info-modal';
 
 interface FoodAnalysisProps {
@@ -1246,6 +1246,44 @@ function getCuratedDefinition(ingredientName: string): string | null {
   return null;
 }
 
+// Generate short analytical definitions with integrated risk assessment
+function getShortDefinition(ingredientName: string, riskLevel: string, fullDescription: string): string {
+  const name = ingredientName.toLowerCase();
+  
+  // Extract the main definition (first sentence)
+  const mainDefinition = fullDescription.split('.')[0] + '.';
+  
+  // Add analytical context based on ingredient type and risk level
+  const riskContext = riskLevel === 'safe' ? 
+    ' Generally recognized as safe for consumption.' :
+    riskLevel === 'caution' ? 
+    ' Should be consumed in moderation; may cause sensitivity in some individuals.' :
+    ' Associated with health concerns; limit consumption when possible.';
+  
+  // Category-specific analytical insights
+  const analyticalInsights: Record<string, string> = {
+    'preservative': ' Functions by inhibiting microbial growth, extending shelf life.',
+    'emulsifier': ' Works by reducing surface tension between oil and water phases.',
+    'thickener': ' Increases viscosity through molecular interactions with water.',
+    'sweetener': ' Provides sweetness with varying metabolic effects.',
+    'flavor': ' Enhances taste perception through chemical compound interactions.',
+    'color': ' Modifies visual appearance through light absorption properties.',
+    'stabilizer': ' Maintains product consistency through molecular stabilization.',
+    'antioxidant': ' Prevents oxidation by neutralizing free radicals.',
+  };
+  
+  let insight = '';
+  for (const [category, description] of Object.entries(analyticalInsights)) {
+    if (name.includes(category) || fullDescription.toLowerCase().includes(category)) {
+      insight = description;
+      break;
+    }
+  }
+  
+  // Combine main definition with analytical insight and risk context
+  return mainDefinition + insight + riskContext;
+}
+
 export function FoodAnalysis({ barcode }: FoodAnalysisProps) {
   // Use both the regular and multi-source product data hooks
   const { data: productData, isLoading: isLoadingProduct, error: productError } = useFoodProduct(barcode);
@@ -1664,111 +1702,106 @@ export function FoodAnalysis({ barcode }: FoodAnalysisProps) {
               <ChevronDown className="h-4 w-4" />
             </Button>
           </CollapsibleTrigger>
-          <CollapsibleContent className="mt-4 space-y-4">
-          {analysisResult.ingredients.length > 0 ? (
-            analysisResult.ingredients.map((ingredient, index) => (
-              <div key={index} className="border rounded-lg p-4">
-                <div className="flex flex-wrap items-center justify-between mb-2 gap-2">
-                  <div className="flex items-center gap-1.5">
-                    <h4 className="font-medium">{ingredient.name}</h4>
-                    <button 
-                      onClick={() => showIngredientInfo(ingredient)}
-                      className="text-primary hover:text-primary/80 p-1 rounded-full hover:bg-primary/10 transition-colors"
-                      aria-label={`More information about ${ingredient.name}`}
-                    >
-                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <circle cx="12" cy="12" r="10" />
-                        <path d="M12 16v-4" />
-                        <path d="M12 8h.01" />
-                      </svg>
-                    </button>
-                  </div>
-                  <div className="flex items-center gap-2 flex-wrap">
-                    {/* Critical warnings only - compact format */}
-                    {ingredient.processing === 'high' && (
-                      <div className="text-xs px-2 py-1 rounded bg-red-100 text-red-800 flex items-center gap-1">
-                        <Factory className="h-3 w-3" />
-                        <span>Highly Processed</span>
+          <CollapsibleContent className="mt-4">
+            <div className="max-w-4xl mx-auto space-y-3">
+              {analysisResult.ingredients.length > 0 ? (
+                analysisResult.ingredients.map((ingredient, index) => (
+                  <div key={index} className="border rounded-lg p-4">
+                    <div className="flex items-start justify-between mb-2">
+                      <div className="flex items-center gap-2 flex-1">
+                        <h4 className="font-medium text-sm">{ingredient.name}</h4>
+                        <button 
+                          onClick={() => showIngredientInfo(ingredient)}
+                          className="p-1 text-muted-foreground hover:text-foreground transition-colors"
+                          title="More information"
+                        >
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <circle cx="12" cy="12" r="10" />
+                            <path d="M12 16v-4" />
+                            <path d="M12 8h.01" />
+                          </svg>
+                        </button>
                       </div>
-                    )}
-                    
-                    {ingredient.allergenicity === 'high' && (
-                      <div className="text-xs px-2 py-1 rounded bg-red-100 text-red-800 flex items-center gap-1">
-                        <AlertCircle className="h-3 w-3" />
-                        <span>High Allergenicity</span>
-                      </div>
-                    )}
-                    
-                    {ingredient.sustainability === 'low' && (
-                      <div className="text-xs px-2 py-1 rounded bg-red-100 text-red-800 flex items-center gap-1">
-                        <Leaf className="h-3 w-3" />
-                        <span>Low Sustainability</span>
-                      </div>
-                    )}
-                    
-                    <Badge className={getRiskColor(ingredient.riskLevel)}>
-                      {ingredient.riskLevel}
-                    </Badge>
-                    <div className="flex items-center gap-1 text-xs px-2 py-1 rounded bg-gray-100">
-                      {getGmoIcon(ingredient.gmoStatus)}
-                      <span>{getGmoStatusText(ingredient.gmoStatus)}</span>
-                    </div>
-                  </div>
-                </div>
-                {ingredient.description && (
-                  <p className="text-sm text-muted-foreground">{ingredient.description}</p>
-                )}
-                
-                {ingredient.concerns && ingredient.concerns.length > 0 && (
-                  <div className="mt-2 text-xs text-red-500">
-                    {ingredient.concerns.map((concern, i) => (
-                      <div key={i} className="flex items-center gap-1">
-                        <AlertTriangle className="h-3 w-3" />
-                        <span>{concern}</span>
-                      </div>
-                    ))}
-                  </div>
-                )}
-                
-                {/* Scientific papers if available */}
-                {ingredient.scientificPapers && ingredient.scientificPapers.length > 0 && (
-                  <div className="mt-3 border-t pt-2">
-                    <div className="text-xs text-muted-foreground">
-                      <span className="font-medium">Scientific Research:</span> {ingredient.scientificPapers.length} {ingredient.scientificPapers.length === 1 ? 'paper' : 'papers'} available
-                    </div>
-                    <div className="mt-2 space-y-2">
-                      {ingredient.scientificPapers.slice(0, 1).map((paper, i) => (
-                        <div key={i} className="text-xs">
-                          <a 
-                            href={paper.url} 
-                            target="_blank" 
-                            rel="noopener noreferrer" 
-                            className="text-primary flex items-center hover:underline"
-                          >
-                            {paper.title.length > 50 ? `${paper.title.substring(0, 50)}...` : paper.title}
-                            <ExternalLink className="h-3 w-3 ml-1" />
-                          </a>
-                          {/* Show peer review status if available */}
-                          {paper.peerReviewed !== undefined && (
-                            <div className="mt-1 text-xs text-muted-foreground">
-                              {paper.peerReviewed ? 
-                                <span className="text-green-600">Peer-reviewed</span> : 
-                                <span className="text-yellow-600">Not peer-reviewed</span>
-                              }
-                            </div>
-                          )}
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <Badge className={clsx(
+                          "text-xs",
+                          ingredient.riskLevel === 'safe' ? "bg-green-100 text-green-800" :
+                          ingredient.riskLevel === 'caution' ? "bg-yellow-100 text-yellow-800" :
+                          "bg-red-100 text-red-800"
+                        )}>
+                          {ingredient.riskLevel === 'safe' ? '✓ Safe' : 
+                           ingredient.riskLevel === 'caution' ? '⚠ Caution' : 
+                           '⚠ Unsafe'}
+                        </Badge>
+                        <div className="flex items-center gap-1 text-xs px-2 py-1 rounded bg-gray-100">
+                          {getGmoIcon(ingredient.gmoStatus)}
+                          <span className="text-xs">
+                            {ingredient.gmoStatus === 'gmo-free' ? 'GMO-Free' : 
+                             ingredient.gmoStatus === 'contains-gmo' ? 'Contains GMO' : 
+                             'May contain GMO'}
+                          </span>
                         </div>
-                      ))}
+                        <div className="flex items-center gap-3 text-xs">
+                          <span>
+                            Processing: <span className={clsx(
+                              "font-medium",
+                              ingredient.processing === 'minimal' ? "text-green-600" :
+                              ingredient.processing === 'moderate' ? "text-yellow-600" :
+                              "text-red-600"
+                            )}>
+                              {ingredient.processing || 'moderate'}
+                            </span>
+                          </span>
+                          <span>
+                            Allergenicity: <span className={clsx(
+                              "font-medium",
+                              ingredient.allergenicity === 'none' || ingredient.allergenicity === 'low' ? "text-green-600" :
+                              ingredient.allergenicity === 'medium' ? "text-yellow-600" :
+                              "text-red-600"
+                            )}>
+                              {ingredient.allergenicity || 'low'}
+                            </span>
+                          </span>
+                          <span>
+                            Sustainability: <span className={clsx(
+                              "font-medium",
+                              ingredient.sustainability === 'high' ? "text-green-600" :
+                              ingredient.sustainability === 'medium' ? "text-yellow-600" :
+                              "text-red-600"
+                            )}>
+                              {ingredient.sustainability || 'medium'}
+                            </span>
+                          </span>
+                        </div>
+                      </div>
                     </div>
+                    
+                    {/* Short analytical definition */}
+                    {ingredient.description && (
+                      <div className="pl-4">
+                        <p className="text-sm text-muted-foreground leading-relaxed mb-3">
+                          {getShortDefinition(ingredient.name, ingredient.riskLevel, ingredient.description)}
+                        </p>
+                      </div>
+                    )}
+                    
+                    {/* Scientific papers if available */}
+                    {ingredient.scientificPapers && ingredient.scientificPapers.length > 0 && (
+                      <div className="mt-3 pt-2 border-t">
+                        <div className="text-xs text-muted-foreground flex items-center gap-1">
+                          <Beaker className="h-3 w-3" />
+                          <span>Scientific Research: {ingredient.scientificPapers.length} {ingredient.scientificPapers.length === 1 ? 'study' : 'studies'} available</span>
+                        </div>
+                      </div>
+                    )}
                   </div>
-                )}
-              </div>
-            ))
-          ) : (
-            <p className="text-sm text-muted-foreground p-4 border rounded-lg">
-              No detailed ingredient information available for this product.
-            </p>
-          )}
+                ))
+              ) : (
+                <p className="text-sm text-muted-foreground p-4 border rounded-lg">
+                  No detailed ingredient information available for this product.
+                </p>
+              )}
+            </div>
           </CollapsibleContent>
         </Collapsible>
 

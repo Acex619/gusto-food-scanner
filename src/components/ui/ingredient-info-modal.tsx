@@ -33,11 +33,11 @@ interface IngredientInfoModalProps {
   onClose: () => void;
 }
 
-// Enhanced ingredient definitions database
-const getIngredientDefinition = (ingredientName: string): string => {
+// Enhanced ingredient definitions database with integrated risk assessment
+const getIngredientDefinition = (ingredientName: string, riskLevel: string, fullDescription?: string): string => {
   const name = ingredientName.toLowerCase();
   
-  const definitions: Record<string, string> = {
+  const baseDefinitions: Record<string, string> = {
     'sodium benzoate': 'A preservative used to prevent spoilage in acidic foods by inhibiting bacterial and fungal growth.',
     'potassium sorbate': 'A food preservative that prevents mold, yeast, and fungal growth in various food products.',
     'citric acid': 'A natural acid found in citrus fruits, commonly used as a preservative and flavor enhancer.',
@@ -61,28 +61,47 @@ const getIngredientDefinition = (ingredientName: string): string => {
     'bha': 'Butylated hydroxyanisole, an antioxidant preservative used to prevent oxidation in foods containing fats.'
   };
   
-  // Try exact match first
-  if (definitions[name]) return definitions[name];
+  // Get base definition
+  let definition = baseDefinitions[name];
   
-  // Try partial matches for complex ingredient names
-  for (const [key, definition] of Object.entries(definitions)) {
-    if (name.includes(key) || key.includes(name)) {
-      return definition;
+  // If not found, try partial matches
+  if (!definition) {
+    for (const [key, def] of Object.entries(baseDefinitions)) {
+      if (name.includes(key) || key.includes(name)) {
+        definition = def;
+        break;
+      }
     }
   }
   
-  // Fallback definition based on ingredient type
-  if (name.includes('preservative')) return 'A substance used to prevent spoilage and extend shelf life of food products.';
-  if (name.includes('emulsifier')) return 'An agent that helps mix oil and water-based ingredients that would normally separate.';
-  if (name.includes('stabilizer')) return 'A substance that maintains the physical and chemical properties of food products.';
-  if (name.includes('thickener')) return 'An agent used to increase the viscosity and improve texture of food products.';
-  if (name.includes('sweetener')) return 'A substance used to add sweetness to food products, either natural or artificial.';
-  if (name.includes('color') || name.includes('dye')) return 'A substance used to add or enhance color in food products.';
-  if (name.includes('flavor')) return 'A substance used to enhance or modify the taste of food products.';
-  if (name.includes('vitamin')) return 'An essential micronutrient added to foods for nutritional fortification.';
-  if (name.includes('mineral')) return 'An inorganic substance added to foods for nutritional supplementation.';
+  // Use provided full description if available
+  if (!definition && fullDescription) {
+    const sentences = fullDescription.split('.');
+    definition = sentences[0] + '.';
+  }
   
-  return 'A food ingredient used in product formulation. Scientific data for detailed definition not yet available.';
+  // Fallback definition based on ingredient type
+  if (!definition) {
+    if (name.includes('preservative')) definition = 'A substance used to prevent spoilage and extend shelf life of food products.';
+    else if (name.includes('emulsifier')) definition = 'An agent that helps mix oil and water-based ingredients that would normally separate.';
+    else if (name.includes('stabilizer')) definition = 'A substance that maintains the physical and chemical properties of food products.';
+    else if (name.includes('thickener')) definition = 'An agent used to increase the viscosity and improve texture of food products.';
+    else if (name.includes('sweetener')) definition = 'A substance used to add sweetness to food products, either natural or artificial.';
+    else if (name.includes('color') || name.includes('dye')) definition = 'A substance used to add or enhance color in food products.';
+    else if (name.includes('flavor')) definition = 'A substance used to enhance or modify the taste of food products.';
+    else if (name.includes('vitamin')) definition = 'An essential micronutrient added to foods for nutritional fortification.';
+    else if (name.includes('mineral')) definition = 'An inorganic substance added to foods for nutritional supplementation.';
+    else definition = 'A food ingredient used in product formulation.';
+  }
+  
+  // Add analytical risk assessment based on risk level
+  const riskAssessment = {
+    'safe': ' Scientific evidence and regulatory assessments indicate this ingredient is safe for consumption at typical dietary levels. Extensive toxicological studies support its continued use in food products.',
+    'caution': ' While generally recognized as safe, some studies suggest potential health concerns with excessive consumption or in sensitive individuals. Moderation is advisable, particularly for those with existing health conditions.',
+    'unsafe': ' Scientific research has identified potential health risks associated with this ingredient. Regulatory agencies may have imposed restrictions, and consumers should limit exposure when possible.'
+  };
+  
+  return definition + (riskAssessment[riskLevel as keyof typeof riskAssessment] || ' Safety profile requires further evaluation based on current scientific evidence.');
 };
 
 // Enhanced scientific sources database
@@ -199,8 +218,8 @@ const getScientificSources = (ingredientName: string, riskLevel: string): Scient
 export function IngredientInfoModal({ ingredient, isOpen, onClose }: IngredientInfoModalProps) {
   if (!ingredient) return null;
   
-  // Get enhanced data
-  const definition = getIngredientDefinition(ingredient.name);
+  // Get enhanced data with integrated risk assessment
+  const definition = getIngredientDefinition(ingredient.name, ingredient.riskLevel, ingredient.description);
   const scientificSources = getScientificSources(ingredient.name, ingredient.riskLevel);
   
   // Determine risk level color and icon
@@ -321,12 +340,6 @@ export function IngredientInfoModal({ ingredient, isOpen, onClose }: IngredientI
                   Processing: {ingredient.processing}
                 </Badge>
               )}
-            </div>
-            
-            {/* Risk Assessment - Inside detailed info section */}
-            <div>
-              <h3 className="text-sm font-medium mb-2">Risk Assessment</h3>
-              <p className="text-sm text-muted-foreground">{ingredient.description}</p>
             </div>
             
             {/* Health Concerns */}
