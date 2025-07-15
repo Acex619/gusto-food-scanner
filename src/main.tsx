@@ -6,9 +6,15 @@ import { queryClient } from '@/lib/queryClient'
 import App from './App.tsx'
 import './index.css'
 
+// Ensure React is available globally before any context creation
+if (typeof window !== 'undefined') {
+  (window as typeof window & { React: typeof React }).React = React;
+}
+
 declare global {
   interface Window {
     debugMount: (msg: string) => void;
+    React?: typeof React;
   }
 }
 
@@ -16,6 +22,11 @@ declare global {
 const mount = () => {
   try {
     console.log("Starting application mount...");
+    
+    // Verify React is properly loaded
+    if (!React || !React.createContext || !React.StrictMode) {
+      throw new Error("React is not properly loaded or missing essential APIs");
+    }
     
     const rootElement = document.getElementById("root");
     if (!rootElement) {
@@ -31,12 +42,12 @@ const mount = () => {
     console.log("React root created, rendering app...");
     
     root.render(
-      <React.StrictMode>
-        <QueryClientProvider client={queryClient}>
-          <App />
-          <ReactQueryDevtools initialIsOpen={false} position="bottom" />
-        </QueryClientProvider>
-      </React.StrictMode>
+      React.createElement(React.StrictMode, {}, 
+        React.createElement(QueryClientProvider, { client: queryClient },
+          React.createElement(App),
+          React.createElement(ReactQueryDevtools, { initialIsOpen: false, position: "bottom" })
+        )
+      )
     );
     
     console.log("Application mounted successfully");
