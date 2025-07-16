@@ -14,8 +14,7 @@ base: mode === 'production' ? '/gusto-food-scanner/' : '/',
   ],
   resolve: {
     alias: {
-      "@": path.resolve(__dirname, "./src"),
-      "react": "react",
+      "@": path.resolve(__dirname, "./src")
     },
   },
   define: {
