@@ -395,7 +395,7 @@ export function BarcodeScanner({ onScanResult }: BarcodeScannerProps) {
       <CardHeader className="text-center pb-4">
         <CardTitle className="flex items-center justify-center gap-3 text-xl">
           <img 
-            src="/gusto-logo.svg" 
+            src="public/gusto-logo.svg" 
             alt="Gusto Logo" 
             className="w-8 h-8"
           />

@@ -23,7 +23,7 @@ const Index = () => {
           <div className="flex flex-col items-center justify-center gap-0 mb-8">
             {/* Logo above title */}
             <img 
-              src="/gusto-logo.svg" 
+              src="public/gusto-logo.svg" 
               alt="Gusto Logo" 
               className="w-40 h-40 transition-transform hover:scale-110 duration-300 drop-shadow-lg"
             />
@@ -113,7 +113,7 @@ const Index = () => {
             <div className="space-y-6">
               <div className="flex justify-center items-center gap-4">
                 <img 
-                  src="/gusto-logo.svg" 
+                  src="public/gusto-logo.svg" 
                   alt="Gusto Logo" 
                   className="w-8 h-8"
                 />
