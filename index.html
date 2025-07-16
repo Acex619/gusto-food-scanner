@@ -10,11 +10,11 @@
     <link rel="alternate icon" href="/favicon.ico" type="image/x-icon" />
     
     <!-- Security Headers -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' 'unsafe-eval' https:; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; connect-src 'self' https: ws:; camera 'self';">
-    <meta http-equiv="X-Frame-Options" content="DENY">    <!-- Remove this line -->
+  
+    <!-- <meta http-equiv="X-Frame-Options" content="DENY">    Remove this line -->
     <meta http-equiv="X-Content-Type-Options" content="nosniff">
     <meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin">
-    <meta http-equiv="Permissions-Policy" content="camera=*, microphone=(), geolocation=(), payment=()">   <!--try camera=(self) this value is incorrect  camera=*-->
+    <meta http-equiv="Permissions-Policy" content="camera=(), microphone=(), geolocation=(), payment=()">   <!--try camera=(self) this value is incorrect  camera=*-->
     
     <!-- Initialize React globals -->
     <script>
