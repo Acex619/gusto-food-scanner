@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Gusto Food Scanner</title>
+    <meta name="description" content="Evidence-based food transparency tool providing comprehensive analysis of food products through barcode scanning" />
+    <meta name="author" content="Gusto" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="alternate icon" href="/favicon.ico" type="image/x-icon" />
+
+    <!-- Security Headers with Georgia's fixes -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' 'unsafe-eval' https:; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; connect-src 'self' https: ws:; media-src 'self' blob:;">
+    <meta http-equiv="X-Content-Type-Options" content="nosniff">
+    <meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin">
+    <meta http-equiv="Permissions-Policy" content="camera=self, microphone=(), geolocation=(), payment=()">
+
+    <!-- Initialize React globals -->
+    <script>
+      window.React = window.React || {};
+      if (typeof globalThis !== 'undefined') {
+        globalThis.React = globalThis.React || {};
+      }
+    </script>
+
+    <!-- Debug styles -->
+    <style>
+      #debug-mount {
+        display: none;
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        background: #f8d7da;
+        color: #721c24;
+        padding: 1rem;
+        font-family: monospace;
+        z-index: 9999;
+      }
+      .show-debug #debug-mount {
+        display: block;
+      }
+    </style>
+    <meta property="og:title" content="Gusto - Food Transparency Scanner" />
+    <meta property="og:description" content="Evidence-based food scanner for nutritional analysis and environmental impact" />
+    <meta property="og:type" content="website" />
+    <meta property="og:image" content="/logo.png" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:site" content="@gusto_app" />
+    <meta name="twitter:image" content="/logo.png" />
+  </head>
+  <body>
+    <div id="root"></div>
+    <div id="debug-mount"></div>
+    <script>
+      // Debug helper
+      window.debugMount = function(msg) {
+        const debug = document.getElementById('debug-mount');
+        if (debug) {
+          debug.textContent = msg;
+          document.body.classList.add('show-debug');
+        }
+      };
+
+      // Check if the root element exists
+      if (!document.getElementById('root')) {
+        debugMount('Error: Root element not found!');
+      }
+      // Add error handling for script loading
+      window.addEventListener('error', function(event) {
+        debugMount('Script error: ' + event.message);
+      });
+    </script>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
