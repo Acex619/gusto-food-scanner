@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 // React polyfill to prevent createContext errors
-import * as React from 'react';
+import React from 'react'
 
 // Simple React assignment to global scope
 if (typeof window !== 'undefined') {
