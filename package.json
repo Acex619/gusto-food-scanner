@@ -10,7 +10,7 @@
     "build:dev": "vite build --mode development",
     "lint": "eslint .",
     "preview": "vite preview",
-    "deploy": "npm run build && gh-pages -d dist",
+    "deploy": "rm -rf dist && vite build && gh-pages -d dist",
     "dev:powershell": "powershell.exe -ExecutionPolicy Bypass -Command \"vite\"",
     "build:powershell": "powershell.exe -ExecutionPolicy Bypass -Command \"vite build\"",
     "setup:powershell": "powershell.exe -ExecutionPolicy Bypass -File Fix-PowerShell-ExecutionPolicy.ps1"

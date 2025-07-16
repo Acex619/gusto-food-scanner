@@ -22,9 +22,7 @@ base: '/gusto-food-scanner/',
     global: 'globalThis',
     'process.env': {}
   },
-  optimizeDeps: {
-    include: ['react', 'react-dom']
-  },
+
   build: {
     chunkSizeWarningLimit: 1000, // Increase warning limit to 1000kb
     rollupOptions: {
