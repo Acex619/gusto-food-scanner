@@ -4,7 +4,8 @@ import path from "path";
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
-base: mode === 'production' ? '/gusto-food-scanner/' : '/',
+  //base: mode === 'production' ? '/gusto-food-scanner/' : '/',
+base: '/',
   server: {
     host: "::",
     port: 8080,
