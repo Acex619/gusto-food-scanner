@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Gusto Food Scanner</title>
+    <meta name="description" content="Evidence-based food transparency tool providing comprehensive analysis of food products through barcode scanning" />
+    <meta name="author" content="Gusto" />
+    <link rel="icon" href="/gusto-food-scanner/favicon.svg" type="image/svg+xml" />
+    <link rel="alternate icon" href="/gusto-food-scanner/favicon.ico" type="image/x-icon" />
+    
+    <!-- Security Headers -->
+  
+    <!-- <meta http-equiv="X-Frame-Options" content="DENY">    Remove this line -->
+    <meta http-equiv="X-Content-Type-Options" content="nosniff">
+    <meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin">
+    <meta http-equiv="Permissions-Policy" content="camera=(), microphone=(), geolocation=(), payment=()">   <!--try camera=(self) this value is incorrect  camera=*-->
+    
+    <!-- Initialize React globals -->
+    <script>
+      // Prevent React createContext errors by ensuring React exists globally
+      window.React = window.React || {};
+      if (typeof globalThis !== 'undefined') {
+        globalThis.React = globalThis.React || {};
+      }
+      if (typeof global !== 'undefined') {
+        global.React = global.React || {};
+      }
+      
+      // Create a temporary createContext function to prevent errors
+      if (!window.React.createContext) {
+        window.React.createContext = function(defaultValue) {
+          console.warn('Temporary React.createContext used - waiting for React to load');
+          return {
+            Provider: function(props) { return props.children; },
+            Consumer: function(props) { return props.children(defaultValue); },
+            displayName: 'TempContext'
+          };
+        };
+      }
+    </script>
+    
+    <!-- Debug styles -->
+    <style>
+      #debug-mount {
+        display: none;
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        background: #f8d7da;
+        color: #721c24;
+        padding: 1rem;
+        font-family: monospace;
+        z-index: 9999;
+      }
+      .show-debug #debug-mount {
+        display: block;
+      }
+    </style>
+
+    <meta property="og:title" content="Gusto - Food Transparency Scanner" />
+    <meta property="og:description" content="Evidence-based food scanner for nutritional analysis and environmental impact" />
+    <meta property="og:type" content="website" />
+    <meta property="og:image" content="/logo.png" />
+
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:site" content="@gusto_app" />
+    <meta name="twitter:image" content="/logo.png" />
+    <script type="module" crossorigin src="/gusto-food-scanner/assets/index-CufD040t.js"></script>
+    <link rel="modulepreload" crossorigin href="/gusto-food-scanner/assets/data-processing-GsMK5QcL.js">
+    <link rel="modulepreload" crossorigin href="/gusto-food-scanner/assets/ui-libs-dZeq81fN.js">
+    <link rel="modulepreload" crossorigin href="/gusto-food-scanner/assets/vendor-CtQlsnd7.js">
+    <link rel="modulepreload" crossorigin href="/gusto-food-scanner/assets/react-vendor-B-V_8rzG.js">
+    <link rel="modulepreload" crossorigin href="/gusto-food-scanner/assets/barcode-scanning-459UoB7n.js">
+    <link rel="stylesheet" crossorigin href="/gusto-food-scanner/assets/index-l8gd5cvs.css">
+  </head>
+
+  <body>
+    <div id="root"></div>
+    <div id="debug-mount"></div>
+    <script>
+      // Debug helper
+      window.debugMount = function(msg) {
+        const debug = document.getElementById('debug-mount');
+        if (debug) {
+          debug.textContent = msg;
+          document.body.classList.add('show-debug');
+        }
+      };
+      
+      // Check if the root element exists
+      if (!document.getElementById('root')) {
+        debugMount('Error: Root element not found!');
+      }
+
+      // Add error handling for script loading
+      window.addEventListener('error', function(event) {
+        debugMount('Script error: ' + event.message);
+      });
+    </script>
+  </body>
+</html>
