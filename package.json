@@ -4,6 +4,7 @@
   "version": "1.0.0",
   "description": "Evidence-based food transparency tool providing comprehensive analysis of food products through barcode scanning",
   "type": "module",
+  "homepage": "https://acex619.github.io/gusto-food-scanner",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
